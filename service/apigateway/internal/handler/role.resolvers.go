@@ -6,10 +6,11 @@ package graph
 
 import (
 	"context"
-	errors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
+	sharedErrors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
 
 	"github.com/MamangRust/monolith-graphql-apigateway/internal/model"
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/role"
+	userrolepb "github.com/MamangRust/monolith-payment-gateway-pb/user_role"
 	"github.com/MamangRust/monolith-payment-gateway-shared/domain/requests"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -23,7 +24,7 @@ func (r *mutationResolver) CreateRole(ctx context.Context, input model.CreateRol
 
 		if err := req.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		reqPb := &pb.CreateRoleRequest{
@@ -46,7 +47,7 @@ func (r *mutationResolver) UpdateRole(ctx context.Context, input model.UpdateRol
 		roleId := int(input.ID)
 
 		if roleId == 0 {
-			return nil, errors.NewBadRequestError("invalid request: role ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: role ID cannot be zero")
 		}
 
 		req := &requests.UpdateRoleRequest{
@@ -56,7 +57,7 @@ func (r *mutationResolver) UpdateRole(ctx context.Context, input model.UpdateRol
 
 		if err := req.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		reqPb := &pb.UpdateRoleRequest{
@@ -83,7 +84,7 @@ func (r *mutationResolver) TrashedRole(ctx context.Context, input model.FindByID
 		roleID := int32(input.RoleID)
 
 		if roleID == 0 {
-			return nil, errors.NewBadRequestError("invalid request: role ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: role ID cannot be zero")
 		}
 
 		role, err := r.RoleGraphql.RoleClient.RoleCommandClient.TrashedRole(ctx, &pb.FindByIdRoleRequest{
@@ -106,7 +107,7 @@ func (r *mutationResolver) RestoreRole(ctx context.Context, input model.FindByID
 		roleID := int32(input.RoleID)
 
 		if roleID == 0 {
-			return nil, errors.NewBadRequestError("invalid request: role ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: role ID cannot be zero")
 		}
 
 		role, err := r.RoleGraphql.RoleClient.RoleCommandClient.RestoreRole(ctx, &pb.FindByIdRoleRequest{
@@ -130,7 +131,7 @@ func (r *mutationResolver) DeleteRolePermanent(ctx context.Context, input model.
 		roleID := int32(input.RoleID)
 
 		if roleID == 0 {
-			return nil, errors.NewBadRequestError("invalid request: role ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: role ID cannot be zero")
 		}
 
 		role, err := r.RoleGraphql.RoleClient.RoleCommandClient.DeleteRolePermanent(ctx, &pb.FindByIdRoleRequest{
@@ -235,7 +236,7 @@ func (r *queryResolver) FindByIDRole(ctx context.Context, input model.FindByIDRo
 	return ResolverHandle(r.ResolverHandle, "FindByIDRole", ctx, func(ctx context.Context) (*model.APIResponseRole, error) {
 		id := int(input.RoleID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: role ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: role ID cannot be zero")
 		}
 
 		cachedData, found := r.RoleGraphql.Cache.GetCachedRoleById(ctx, id)
@@ -372,7 +373,7 @@ func (r *queryResolver) FindByUserIDRole(ctx context.Context, input model.FindBy
 	return ResolverHandle(r.ResolverHandle, "FindByUserIDRole", ctx, func(ctx context.Context) (*model.APIResponsesRole, error) {
 		userId := int(input.UserID)
 		if userId <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: user ID must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: user ID must be greater than zero")
 		}
 
 		cachedData, found := r.RoleGraphql.Cache.GetCachedRoleByUserId(ctx, userId)
@@ -380,7 +381,7 @@ func (r *queryResolver) FindByUserIDRole(ctx context.Context, input model.FindBy
 			return cachedData, nil
 		}
 
-		res, err := r.RoleGraphql.RoleClient.RoleQueryClient.FindByUserId(ctx, &pb.FindByIdUserRoleRequest{
+		res, err := r.RoleGraphql.RoleClient.UserRoleClient.FindByUserId(ctx, &userrolepb.FindByIdUserRoleRequest{
 			UserId: int32(userId),
 		})
 		if err != nil {

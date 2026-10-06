@@ -25,6 +25,7 @@ type MerchantServiceTestSuite struct {
 	gormDB          *gorm.DB
 	ts              *tests.TestSuite
 	merchantService service.Service
+	userClient      *tests.UserClient
 	merchantID      int
 	documentID      int
 	userID          int
@@ -41,7 +42,11 @@ func (s *MerchantServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	repos := repository.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	repos := repository.NewRepositories(gormDB, userClient.Query, repository.GuardOptions{User: userClient.Guard()})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
@@ -69,6 +74,9 @@ func (s *MerchantServiceTestSuite) SetupSuite() {
 }
 
 func (s *MerchantServiceTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

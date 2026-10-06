@@ -26,6 +26,7 @@ type TopupServiceTestSuite struct {
 	suite.Suite
 	gormDB       *gorm.DB
 	ts           *tests.TestSuite
+	deps         *tests.DependencyClients
 	topupService service.Service
 	topupID      int
 	cardNumber   string
@@ -43,15 +44,27 @@ func (s *TopupServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	cardRepo := &realCardRepo{query: card_repo_impl.NewCardQueryRepository(gormDB), cmd: card_repo_impl.NewCardCommandRepository(gormDB)}
-	saldoRepo := &realSaldoRepo{repo: saldo_repo_impl.NewRepositories(gormDB)}
-	repos := repository.NewRepositories(gormDB, cardRepo, saldoRepo)
-
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
 	log, _ := logger.NewLogger("test", lp)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(redisClient, log, cacheMetrics)
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(
+		gormDB,
+		deps.CardQuery,
+		deps.CardCommand,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		repository.GuardOptions{
+			Card:  tests.Guard("card", log),
+			Saldo: tests.Guard("saldo", log),
+		},
+	)
 
 	s.topupService = service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -93,6 +106,9 @@ func (s *TopupServiceTestSuite) SetupSuite() {
 }
 
 func (s *TopupServiceTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
 	s.ts.Teardown()
 }
 

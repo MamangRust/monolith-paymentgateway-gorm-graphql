@@ -26,6 +26,7 @@ type CardRewardServiceTestSuite struct {
 	gormDB      *gorm.DB
 	ts          *tests.TestSuite
 	cardService service.Service
+	userClient  *tests.UserClient
 	cardNumber  string
 	userID      int
 }
@@ -44,7 +45,11 @@ func (s *CardRewardServiceTestSuite) SetupSuite() {
 		s.Require().NoError(gormErr)
 	}
 	s.gormDB = gormDB
-	repos := repository.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	repos := repository.NewRepositories(gormDB, userClient.Query, repository.GuardOptions{User: userClient.Guard()})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
@@ -84,6 +89,9 @@ func (s *CardRewardServiceTestSuite) SetupSuite() {
 }
 
 func (s *CardRewardServiceTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

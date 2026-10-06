@@ -41,7 +41,7 @@ func (s *UserGapiTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	repos := repository.NewRepositories(gormDB)
+	repos := repository.NewRepositories(&repository.Deps{Db: gormDB})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()

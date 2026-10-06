@@ -19,10 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserQueryService_FindAll_FullMethodName       = "/pb.user.UserQueryService/FindAll"
-	UserQueryService_FindById_FullMethodName      = "/pb.user.UserQueryService/FindById"
-	UserQueryService_FindByActive_FullMethodName  = "/pb.user.UserQueryService/FindByActive"
-	UserQueryService_FindByTrashed_FullMethodName = "/pb.user.UserQueryService/FindByTrashed"
+	UserQueryService_FindAll_FullMethodName                = "/pb.user.UserQueryService/FindAll"
+	UserQueryService_FindById_FullMethodName               = "/pb.user.UserQueryService/FindById"
+	UserQueryService_FindByEmail_FullMethodName            = "/pb.user.UserQueryService/FindByEmail"
+	UserQueryService_FindByEmailAndVerify_FullMethodName   = "/pb.user.UserQueryService/FindByEmailAndVerify"
+	UserQueryService_FindByVerificationCode_FullMethodName = "/pb.user.UserQueryService/FindByVerificationCode"
+	UserQueryService_FindByActive_FullMethodName           = "/pb.user.UserQueryService/FindByActive"
+	UserQueryService_FindByTrashed_FullMethodName          = "/pb.user.UserQueryService/FindByTrashed"
 )
 
 // UserQueryServiceClient is the client API for UserQueryService service.
@@ -31,6 +34,9 @@ const (
 type UserQueryServiceClient interface {
 	FindAll(ctx context.Context, in *FindAllUserRequest, opts ...grpc.CallOption) (*ApiResponsePaginationUser, error)
 	FindById(ctx context.Context, in *FindByIdUserRequest, opts ...grpc.CallOption) (*ApiResponseUser, error)
+	FindByEmail(ctx context.Context, in *FindByEmailRequest, opts ...grpc.CallOption) (*ApiResponseUserWithPassword, error)
+	FindByEmailAndVerify(ctx context.Context, in *FindByEmailAndVerifyRequest, opts ...grpc.CallOption) (*ApiResponseUserWithPassword, error)
+	FindByVerificationCode(ctx context.Context, in *FindByVerificationCodeRequest, opts ...grpc.CallOption) (*ApiResponseUser, error)
 	FindByActive(ctx context.Context, in *FindAllUserRequest, opts ...grpc.CallOption) (*ApiResponsePaginationUserDeleteAt, error)
 	FindByTrashed(ctx context.Context, in *FindAllUserRequest, opts ...grpc.CallOption) (*ApiResponsePaginationUserDeleteAt, error)
 }
@@ -63,6 +69,36 @@ func (c *userQueryServiceClient) FindById(ctx context.Context, in *FindByIdUserR
 	return out, nil
 }
 
+func (c *userQueryServiceClient) FindByEmail(ctx context.Context, in *FindByEmailRequest, opts ...grpc.CallOption) (*ApiResponseUserWithPassword, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApiResponseUserWithPassword)
+	err := c.cc.Invoke(ctx, UserQueryService_FindByEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userQueryServiceClient) FindByEmailAndVerify(ctx context.Context, in *FindByEmailAndVerifyRequest, opts ...grpc.CallOption) (*ApiResponseUserWithPassword, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApiResponseUserWithPassword)
+	err := c.cc.Invoke(ctx, UserQueryService_FindByEmailAndVerify_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userQueryServiceClient) FindByVerificationCode(ctx context.Context, in *FindByVerificationCodeRequest, opts ...grpc.CallOption) (*ApiResponseUser, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApiResponseUser)
+	err := c.cc.Invoke(ctx, UserQueryService_FindByVerificationCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userQueryServiceClient) FindByActive(ctx context.Context, in *FindAllUserRequest, opts ...grpc.CallOption) (*ApiResponsePaginationUserDeleteAt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ApiResponsePaginationUserDeleteAt)
@@ -89,6 +125,9 @@ func (c *userQueryServiceClient) FindByTrashed(ctx context.Context, in *FindAllU
 type UserQueryServiceServer interface {
 	FindAll(context.Context, *FindAllUserRequest) (*ApiResponsePaginationUser, error)
 	FindById(context.Context, *FindByIdUserRequest) (*ApiResponseUser, error)
+	FindByEmail(context.Context, *FindByEmailRequest) (*ApiResponseUserWithPassword, error)
+	FindByEmailAndVerify(context.Context, *FindByEmailAndVerifyRequest) (*ApiResponseUserWithPassword, error)
+	FindByVerificationCode(context.Context, *FindByVerificationCodeRequest) (*ApiResponseUser, error)
 	FindByActive(context.Context, *FindAllUserRequest) (*ApiResponsePaginationUserDeleteAt, error)
 	FindByTrashed(context.Context, *FindAllUserRequest) (*ApiResponsePaginationUserDeleteAt, error)
 	mustEmbedUnimplementedUserQueryServiceServer()
@@ -106,6 +145,15 @@ func (UnimplementedUserQueryServiceServer) FindAll(context.Context, *FindAllUser
 }
 func (UnimplementedUserQueryServiceServer) FindById(context.Context, *FindByIdUserRequest) (*ApiResponseUser, error) {
 	return nil, status.Error(codes.Unimplemented, "method FindById not implemented")
+}
+func (UnimplementedUserQueryServiceServer) FindByEmail(context.Context, *FindByEmailRequest) (*ApiResponseUserWithPassword, error) {
+	return nil, status.Error(codes.Unimplemented, "method FindByEmail not implemented")
+}
+func (UnimplementedUserQueryServiceServer) FindByEmailAndVerify(context.Context, *FindByEmailAndVerifyRequest) (*ApiResponseUserWithPassword, error) {
+	return nil, status.Error(codes.Unimplemented, "method FindByEmailAndVerify not implemented")
+}
+func (UnimplementedUserQueryServiceServer) FindByVerificationCode(context.Context, *FindByVerificationCodeRequest) (*ApiResponseUser, error) {
+	return nil, status.Error(codes.Unimplemented, "method FindByVerificationCode not implemented")
 }
 func (UnimplementedUserQueryServiceServer) FindByActive(context.Context, *FindAllUserRequest) (*ApiResponsePaginationUserDeleteAt, error) {
 	return nil, status.Error(codes.Unimplemented, "method FindByActive not implemented")
@@ -170,6 +218,60 @@ func _UserQueryService_FindById_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserQueryService_FindByEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindByEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserQueryServiceServer).FindByEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserQueryService_FindByEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserQueryServiceServer).FindByEmail(ctx, req.(*FindByEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserQueryService_FindByEmailAndVerify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindByEmailAndVerifyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserQueryServiceServer).FindByEmailAndVerify(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserQueryService_FindByEmailAndVerify_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserQueryServiceServer).FindByEmailAndVerify(ctx, req.(*FindByEmailAndVerifyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserQueryService_FindByVerificationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindByVerificationCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserQueryServiceServer).FindByVerificationCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserQueryService_FindByVerificationCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserQueryServiceServer).FindByVerificationCode(ctx, req.(*FindByVerificationCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserQueryService_FindByActive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FindAllUserRequest)
 	if err := dec(in); err != nil {
@@ -220,6 +322,18 @@ var UserQueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FindById",
 			Handler:    _UserQueryService_FindById_Handler,
+		},
+		{
+			MethodName: "FindByEmail",
+			Handler:    _UserQueryService_FindByEmail_Handler,
+		},
+		{
+			MethodName: "FindByEmailAndVerify",
+			Handler:    _UserQueryService_FindByEmailAndVerify_Handler,
+		},
+		{
+			MethodName: "FindByVerificationCode",
+			Handler:    _UserQueryService_FindByVerificationCode_Handler,
 		},
 		{
 			MethodName: "FindByActive",

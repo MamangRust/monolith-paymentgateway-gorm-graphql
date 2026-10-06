@@ -35,9 +35,11 @@ type SaldoGapiTestSuite struct {
 	suite.Suite
 	gormDB     *gorm.DB
 	ts         *tests.TestSuite
+	deps       *tests.DependencyClients
 	saldoH     handler.Handler
 	cardH      card_handler.Handler
 	userH      user_handler.Handler
+	userClient *tests.UserClient
 	userID     int32
 	cardID     int32
 	cardNumber string
@@ -55,9 +57,12 @@ func (s *SaldoGapiTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	repos := repository.NewRepositories(gormDB)
-	cardRepos := card_repository.NewRepositories(gormDB)
-	userRepos := user_repository.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	cardRepos := card_repository.NewRepositories(gormDB, userClient.Query, card_repository.GuardOptions{User: userClient.Guard()})
+	userRepos := user_repository.NewRepositories(&user_repository.Deps{Db: gormDB})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
@@ -65,6 +70,12 @@ func (s *SaldoGapiTestSuite) SetupSuite() {
 	hasher := hash.NewHashingPassword()
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(redisClient, log, cacheMetrics)
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(gormDB, deps.CardQuery, deps.CardCommand)
 
 	saldoSvc := service.NewService(&service.Deps{
 		Cache:        cacheStore,
@@ -89,8 +100,6 @@ func (s *SaldoGapiTestSuite) SetupSuite() {
 	s.saldoH = handler.NewHandler(saldoSvc)
 	s.cardH = card_handler.NewHandler(cardSvc)
 	s.userH = user_handler.NewHandler(userSvc)
-
-	// Create user
 	ctx := context.Background()
 	userRes, err := s.userH.Create(ctx, &pbuser.CreateUserRequest{
 		Firstname:       "Saldo",
@@ -116,6 +125,12 @@ func (s *SaldoGapiTestSuite) SetupSuite() {
 }
 
 func (s *SaldoGapiTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	if s.ts != nil {
 		s.ts.Teardown()
 	}

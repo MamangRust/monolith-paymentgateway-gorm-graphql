@@ -3,9 +3,22 @@ package repository
 import (
 	"gorm.io/gorm"
 
+	pbcard "github.com/MamangRust/monolith-payment-gateway-pb/card"
+	pbsaldo "github.com/MamangRust/monolith-payment-gateway-pb/saldo"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/adapter"
+	cardadapter "github.com/MamangRust/monolith-payment-gateway-pkg/adapter/card"
+	saldoadapter "github.com/MamangRust/monolith-payment-gateway-pkg/adapter/saldo"
 	transferstatsrepository "github.com/MamangRust/monolith-payment-gateway-transfer/repository/stats"
 	transferstatsbycardrepository "github.com/MamangRust/monolith-payment-gateway-transfer/repository/statsbycard"
 )
+
+// GuardOptions carries the resilience guard options for each outbound
+// dependency. Callers build them with adapter.WithDependencyGuard (typically
+// around resilience.NewDependencyGuard) so the repository owns the wiring.
+type GuardOptions struct {
+	Saldo []adapter.GuardOption
+	Card  []adapter.GuardOption
+}
 
 type Repositories interface {
 	SaldoRepository
@@ -27,15 +40,24 @@ type repositories struct {
 
 func NewRepositories(
 	db *gorm.DB,
-	saldo SaldoRepository,
-	card CardRepository,
+	saldoQuery pbsaldo.SaldoQueryServiceClient,
+	saldoCommand pbsaldo.SaldoCommandServiceClient,
+	cardQuery pbcard.CardQueryServiceClient,
+	cardCommand pbcard.CardCommandServiceClient,
+	guards ...GuardOptions,
 ) Repositories {
+	var g GuardOptions
+
+	if len(guards) > 0 {
+		g = guards[0]
+	}
+
 	return &repositories{
-		SaldoRepository:               saldo,
+		SaldoRepository:               saldoadapter.NewAdapter(saldoQuery, saldoCommand, g.Saldo...),
 		TransferQueryRepository:       NewTransferQueryRepository(db),
 		TransferCommandRepository:     NewTransferCommandRepository(db),
 		TransferStatsRepository:       transferstatsrepository.NewTransferStatsRepository(db),
 		TransferStatsByCardRepository: transferstatsbycardrepository.NewTransferStatsByCardRepository(db),
-		CardRepository:                card,
+		CardRepository:                cardadapter.NewAdapter(cardQuery, cardCommand, g.Card...),
 	}
 }

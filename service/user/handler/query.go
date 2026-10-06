@@ -107,6 +107,63 @@ func (s *userQueryHandleGrpc) FindById(ctx context.Context, request *pb.FindById
 	}, nil
 }
 
+func (s *userQueryHandleGrpc) FindByEmail(ctx context.Context, request *pb.FindByEmailRequest) (*pb.ApiResponseUserWithPassword, error) {
+	user, err := s.userQueryService.FindByEmail(ctx, request.GetEmail())
+
+	if err != nil {
+		return nil, errors.ToGrpcError(err)
+	}
+
+	return &pb.ApiResponseUserWithPassword{
+		Status:  "success",
+		Message: "Successfully fetched user by email",
+		Data: &pb.UserResponseWithPassword{
+			Id:       int32(user.UserID),
+			Email:    user.Email,
+			Password: user.Password,
+		},
+	}, nil
+}
+
+func (s *userQueryHandleGrpc) FindByEmailAndVerify(ctx context.Context, request *pb.FindByEmailAndVerifyRequest) (*pb.ApiResponseUserWithPassword, error) {
+	user, err := s.userQueryService.FindByEmailAndVerify(ctx, request.GetEmail())
+
+	if err != nil {
+		return nil, errors.ToGrpcError(err)
+	}
+
+	return &pb.ApiResponseUserWithPassword{
+		Status:  "success",
+		Message: "Successfully fetched verified user by email",
+		Data: &pb.UserResponseWithPassword{
+			Id:       int32(user.UserID),
+			Email:    user.Email,
+			Password: user.Password,
+		},
+	}, nil
+}
+
+func (s *userQueryHandleGrpc) FindByVerificationCode(ctx context.Context, request *pb.FindByVerificationCodeRequest) (*pb.ApiResponseUser, error) {
+	user, err := s.userQueryService.FindByVerificationCode(ctx, request.GetVerificationCode())
+
+	if err != nil {
+		return nil, errors.ToGrpcError(err)
+	}
+
+	return &pb.ApiResponseUser{
+		Status:  "success",
+		Message: "Successfully fetched user by verification code",
+		Data: &pb.UserResponse{
+			Id:        int32(user.UserID),
+			Firstname: user.Firstname,
+			Lastname:  user.Lastname,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
+		},
+	}, nil
+}
+
 func (s *userQueryHandleGrpc) FindByActive(ctx context.Context, request *pb.FindAllUserRequest) (*pb.ApiResponsePaginationUserDeleteAt, error) {
 	page := int(request.GetPage())
 	pageSize := int(request.GetPageSize())

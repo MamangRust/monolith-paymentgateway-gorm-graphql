@@ -2,6 +2,7 @@ package apps
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -23,6 +24,9 @@ import (
 	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 	otel_pkg "github.com/MamangRust/monolith-payment-gateway-pkg/otel"
 	redisclient "github.com/MamangRust/monolith-payment-gateway-pkg/redis"
+	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
@@ -219,23 +223,28 @@ func RunClient() (*Client, func(), error) {
 		Mencache: mencache,
 	})
 
-	port := getEnvOrDefault("CLIENT_PORT", "5000")
+	graphqlServer := setupGraphql(tokenManager, resolver, log, myredis.Client)
 
 	go func() {
-		log.Info(fmt.Sprintf("🚀 Starting GraphQL server on :%s", port))
-		if err := setupGraphql(tokenManager, resolver, log); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Info(fmt.Sprintf("🚀 Starting GraphQL server on %s", graphqlServer.Addr))
+		if err := graphqlServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error("GraphQL server error", zap.Error(err))
 		}
 	}()
 
 	shutdown := func() {
-		_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		log.Info("Shutting down GraphQL API Gateway...")
+
+		if err := graphqlServer.Shutdown(ctx); err != nil {
+			log.Error("GraphQL server shutdown failed", zap.Error(err))
+		}
+
 		closeConnections(conns, log)
 
-		if err := telemetry.Shutdown(context.Background()); err != nil {
+		if err := telemetry.Shutdown(ctx); err != nil {
 			log.Error("Telemetry shutdown failed", zap.Error(err))
 		}
 
@@ -247,13 +256,12 @@ func RunClient() (*Client, func(), error) {
 	}, shutdown, nil
 }
 
-func setupGraphql(token auth.TokenManager, resolver *graph.Resolver, logger logger.LoggerInterface) error {
-	port := getEnvOrDefault("CLIENT_PORT", "5000")
-
-	logger.Debug("Starting GraphQL server", zap.String("port", getEnvOrDefault("CLIENT_PORT", "5000")))
-
+func setupGraphql(token auth.TokenManager, resolver *graph.Resolver, logger logger.LoggerInterface, rdb *redis.Client) *http.Server {
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{
 		Resolvers: resolver,
+		Directives: graph.DirectiveRoot{
+			HasRole: middlewares.HasRole(resolver.RoleGraphql.Permission),
+		},
 	}))
 
 	srv.AddTransport(transport.Options{})
@@ -268,13 +276,68 @@ func setupGraphql(token auth.TokenManager, resolver *graph.Resolver, logger logg
 		Cache: lru.New[string](100),
 	})
 
-	http.Handle("/", playground.Handler("GraphQL Playground", "/query"))
-	http.Handle("/query", middlewares.AuthMiddleware(token, logger)(srv))
+	port := getEnvOrDefault("CLIENT_PORT", "5000")
+
+	r := chi.NewRouter()
+	r.Use(chimw.RequestID)
+	r.Use(chimw.Recoverer)
+
+	// k8s liveness/readiness probes target these paths; they must stay
+	// registered on the GraphQL server port.
+	r.Get("/health/live", createLivenessHandler())
+	r.Get("/health/ready", createReadinessHandler(logger, rdb))
+
+	r.Handle("/", playground.Handler("GraphQL Playground", "/query"))
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.AuthMiddleware(token, logger))
+		r.Handle("/query", srv)
+	})
 
 	logger.Info("GraphQL Playground running",
 		zap.String("url", "http://localhost:"+port),
 		zap.String("endpoint", "/query"),
 	)
 
-	return http.ListenAndServe(":"+port, nil)
+	return &http.Server{
+		Addr:              ":" + port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+}
+
+func createLivenessHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		respondJSON(w, http.StatusOK, map[string]interface{}{
+			"status": "healthy",
+			"time":   time.Now().UTC(),
+		})
+	}
+}
+
+func createReadinessHandler(logger logger.LoggerInterface, rdb *redis.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+
+		if err := rdb.Ping(ctx).Err(); err != nil {
+			logger.Error("Readiness check failed: redis unreachable", zap.Error(err))
+			respondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+				"status": "not_ready",
+				"deps":   map[string]string{"redis": "down"},
+			})
+			return
+		}
+
+		respondJSON(w, http.StatusOK, map[string]interface{}{
+			"status": "ready",
+			"deps":   map[string]string{"redis": "up"},
+			"time":   time.Now().UTC(),
+		})
+	}
+}
+
+func respondJSON(w http.ResponseWriter, code int, payload map[string]interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(payload)
 }

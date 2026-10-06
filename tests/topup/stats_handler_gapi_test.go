@@ -22,8 +22,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 
-	card_repo "github.com/MamangRust/monolith-payment-gateway-card/repository"
-	saldo_repo "github.com/MamangRust/monolith-payment-gateway-saldo/repository"
 	"gorm.io/gorm"
 )
 
@@ -31,6 +29,7 @@ type TopupStatsHandlerGapiTestSuite struct {
 	suite.Suite
 	gormDB       *gorm.DB
 	ts           *tests.TestSuite
+	deps         *tests.DependencyClients
 	lis          *bufconn.Listener
 	conn         *grpc.ClientConn
 	amountClient pb.TopupStatsAmountServiceClient
@@ -48,14 +47,6 @@ func (s *TopupStatsHandlerGapiTestSuite) SetupSuite() {
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
 	s.gormDB = gormDB
-	realSaldo := &realSaldoRepo{repo: saldo_repo.NewRepositories(gormDB)}
-	realCard := &realCardRepo{
-		query: card_repo.NewCardQueryRepository(gormDB),
-		cmd:   card_repo.NewCardCommandRepository(gormDB),
-	}
-
-	repos := repository.NewRepositories(gormDB, realCard, realSaldo)
-
 	zapLog := zap.NewNop()
 	myLogger := &logger.Logger{Log: zapLog}
 
@@ -63,6 +54,22 @@ func (s *TopupStatsHandlerGapiTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(redisOption)
 	cacheStore := cache.NewCacheStore(redisClient, myLogger, &dummyCacheMetrics{})
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, myLogger)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(
+		gormDB,
+		deps.CardQuery,
+		deps.CardCommand,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		repository.GuardOptions{
+			Card:  tests.Guard("card", myLogger),
+			Saldo: tests.Guard("saldo", myLogger),
+		},
+	)
 
 	svc := service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -115,6 +122,9 @@ func (s *TopupStatsHandlerGapiTestSuite) TearDownSuite() {
 	}
 	if s.lis != nil {
 		s.lis.Close()
+	}
+	if s.deps != nil {
+		s.deps.Close()
 	}
 	s.ts.Teardown()
 }

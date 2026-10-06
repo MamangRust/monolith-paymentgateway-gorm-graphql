@@ -19,12 +19,13 @@ import (
 
 type WithdrawRepositoryTestSuite struct {
 	suite.Suite
-	gormDB   *gorm.DB
-	ts       *tests.TestSuite
-	repo     repository.Repositories
-	cardRepo *card_repo.Repositories
-	userRepo user_repo.Repositories
-	userID   int
+	gormDB     *gorm.DB
+	ts         *tests.TestSuite
+	repo       repository.Repositories
+	cardRepo   *card_repo.Repositories
+	userRepo   *user_repo.Repositories
+	userClient *tests.UserClient
+	userID     int
 }
 
 func (s *WithdrawRepositoryTestSuite) SetupSuite() {
@@ -36,13 +37,17 @@ func (s *WithdrawRepositoryTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.Require().NoError(err)
 
-	s.userRepo = user_repo.NewRepositories(gormDB)
-	s.cardRepo = card_repo.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	s.userRepo = user_repo.NewRepositories(&user_repo.Deps{Db: gormDB})
+	s.cardRepo = card_repo.NewRepositories(gormDB, userClient.Query, card_repo.GuardOptions{User: userClient.Guard()})
 	// Withdraw repository methods also mostly use db queries directly
-	s.repo = repository.NewRepositories(gormDB, nil, nil)
+	s.repo = repository.NewRepositories(gormDB, nil, nil, nil, nil, 0)
 
 	// Create user
-	user, err := s.userRepo.UserCommand().CreateUser(context.Background(), &requests.CreateUserRequest{
+	user, err := s.userRepo.UserCommand.CreateUser(context.Background(), &requests.CreateUserRequest{
 		FirstName: "Withdraw",
 		LastName:  "Tester",
 		Email:     fmt.Sprintf("withdraw.tester-%d@example.com", time.Now().UnixNano()),
@@ -53,6 +58,9 @@ func (s *WithdrawRepositoryTestSuite) SetupSuite() {
 }
 
 func (s *WithdrawRepositoryTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

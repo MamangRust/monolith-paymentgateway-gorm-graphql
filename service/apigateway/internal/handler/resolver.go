@@ -38,6 +38,7 @@ import (
 	merchantstatpb "github.com/MamangRust/monolith-payment-gateway-pb/merchant/stats"
 	merchantdocumentpb "github.com/MamangRust/monolith-payment-gateway-pb/merchant_document"
 	rolepb "github.com/MamangRust/monolith-payment-gateway-pb/role"
+	userrolepb "github.com/MamangRust/monolith-payment-gateway-pb/user_role"
 	saldopb "github.com/MamangRust/monolith-payment-gateway-pb/saldo"
 	saldostatspb "github.com/MamangRust/monolith-payment-gateway-pb/saldo/stats"
 	topuppb "github.com/MamangRust/monolith-payment-gateway-pb/topup"
@@ -85,6 +86,7 @@ type UserClient struct {
 type RoleClient struct {
 	RoleQueryClient   rolepb.RoleServiceClient
 	RoleCommandClient rolepb.RoleCommandServiceClient
+	UserRoleClient    userrolepb.UserRoleServiceClient
 }
 
 type CardClient struct {
@@ -287,6 +289,7 @@ func NewResolver(
 			RoleClient: RoleClient{
 				RoleQueryClient:   rolepb.NewRoleServiceClient(deps.Clients.RoleClient),
 				RoleCommandClient: rolepb.NewRoleCommandServiceClient(deps.Clients.RoleClient),
+				UserRoleClient:    userrolepb.NewUserRoleServiceClient(deps.Clients.RoleClient),
 			},
 			Kafka:      deps.Kafka,
 			Logger:     deps.Logger,

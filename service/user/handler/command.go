@@ -57,6 +57,90 @@ func (s *userCommandHandleGrpc) Create(ctx context.Context, request *pb.CreateUs
 	}, nil
 }
 
+func (s *userCommandHandleGrpc) CreateUser(ctx context.Context, request *pb.RegisterUserRequest) (*pb.ApiResponseUser, error) {
+	req := &requests.RegisterRequest{
+		FirstName:    request.GetFirstname(),
+		LastName:     request.GetLastname(),
+		Email:        request.GetEmail(),
+		Password:     request.GetPassword(),
+		VerifiedCode: request.GetVerificationCode(),
+		IsVerified:   request.GetIsVerified(),
+	}
+
+	user, err := s.userCommandService.CreateUserFromRegister(ctx, req)
+
+	if err != nil {
+		return nil, errors.ToGrpcError(err)
+	}
+
+	return &pb.ApiResponseUser{
+		Status:  "success",
+		Message: "Successfully created user",
+		Data: &pb.UserResponse{
+			Id:        int32(user.UserID),
+			Firstname: user.Firstname,
+			Lastname:  user.Lastname,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
+		},
+	}, nil
+}
+
+func (s *userCommandHandleGrpc) UpdateUserIsVerified(ctx context.Context, request *pb.UpdateUserIsVerifiedRequest) (*pb.ApiResponseUser, error) {
+	userID := int(request.GetUserId())
+
+	if userID <= 0 {
+		return nil, user_errors.ErrGrpcUserInvalidId
+	}
+
+	user, err := s.userCommandService.UpdateUserIsVerified(ctx, userID, request.GetIsVerified())
+
+	if err != nil {
+		return nil, errors.ToGrpcError(err)
+	}
+
+	return &pb.ApiResponseUser{
+		Status:  "success",
+		Message: "Successfully updated user verification",
+		Data: &pb.UserResponse{
+			Id:        int32(user.UserID),
+			Firstname: user.Firstname,
+			Lastname:  user.Lastname,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
+		},
+	}, nil
+}
+
+func (s *userCommandHandleGrpc) UpdateUserPassword(ctx context.Context, request *pb.UpdateUserPasswordRequest) (*pb.ApiResponseUser, error) {
+	userID := int(request.GetUserId())
+
+	if userID <= 0 {
+		return nil, user_errors.ErrGrpcUserInvalidId
+	}
+
+	user, err := s.userCommandService.UpdateUserPassword(ctx, userID, request.GetPassword())
+
+	if err != nil {
+		return nil, errors.ToGrpcError(err)
+	}
+
+	return &pb.ApiResponseUser{
+		Status:  "success",
+		Message: "Successfully updated user password",
+		Data: &pb.UserResponse{
+			Id:        int32(user.UserID),
+			Firstname: user.Firstname,
+			Lastname:  user.Lastname,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
+		},
+	}, nil
+}
+
 func (s *userCommandHandleGrpc) Update(ctx context.Context, request *pb.UpdateUserRequest) (*pb.ApiResponseUser, error) {
 	id := int(request.GetId())
 

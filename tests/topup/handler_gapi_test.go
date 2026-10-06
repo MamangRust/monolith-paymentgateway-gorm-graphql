@@ -14,7 +14,6 @@ import (
 	pbsaldo "github.com/MamangRust/monolith-payment-gateway-pb/saldo"
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/topup"
 	pbuser "github.com/MamangRust/monolith-payment-gateway-pb/user"
-	"github.com/MamangRust/monolith-payment-gateway-pkg/adapter"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/hash"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 	saldo_handler "github.com/MamangRust/monolith-payment-gateway-saldo/handler"
@@ -44,6 +43,7 @@ type TopupGapiTestSuite struct {
 	gormDB     *gorm.DB
 	ts         *tests.TestSuite
 	topupH     handler.Handler
+	userClient *tests.UserClient
 	userID     int32
 	cardID     int32
 	cardNumber string
@@ -71,25 +71,22 @@ func (s *TopupGapiTestSuite) SetupSuite() {
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(redisClient, log, cacheMetrics)
 
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
 	// Dependency services handlers (local implementation)
 	cardSvc := card_service.NewService(&card_service.Deps{
 		Cache:        cacheStore,
-		Repositories: card_repository.NewRepositories(gormDB),
+		Repositories: card_repository.NewRepositories(gormDB, userClient.Query, card_repository.GuardOptions{User: userClient.Guard()}),
 		Logger:       log,
 		Kafka:        nil,
 	})
 	cardH := card_handler.NewHandler(cardSvc)
 
-	saldoSvc := saldo_service.NewService(&saldo_service.Deps{
-		Cache:        cacheStore,
-		Repositories: saldo_repository.NewRepositories(gormDB),
-		Logger:       log,
-	})
-	saldoH := saldo_handler.NewHandler(saldoSvc)
-
 	userSvc := user_service.NewService(&user_service.Deps{
 		Cache:        cacheStore,
-		Repositories: user_repository.NewRepositories(gormDB),
+		Repositories: user_repository.NewRepositories(&user_repository.Deps{Db: gormDB}),
 		Hash:         hasher,
 		Logger:       log,
 	})
@@ -100,13 +97,6 @@ func (s *TopupGapiTestSuite) SetupSuite() {
 	s.grpcServer = grpc.NewServer()
 	pbcard.RegisterCardQueryServiceServer(s.grpcServer, cardH)
 	pbcard.RegisterCardCommandServiceServer(s.grpcServer, cardH)
-	pbsaldo.RegisterSaldoQueryServiceServer(s.grpcServer, saldoH)
-	pbsaldo.RegisterSaldoCommandServiceServer(s.grpcServer, saldoH)
-
-	go func() {
-		if err := s.grpcServer.Serve(s.lis); err != nil {
-		}
-	}()
 
 	s.conn, err = grpc.DialContext(context.Background(), "bufnet",
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
@@ -115,12 +105,37 @@ func (s *TopupGapiTestSuite) SetupSuite() {
 		grpc.WithInsecure())
 	s.Require().NoError(err)
 
-	// Create adapters
-	cardAdapter := adapter.NewCardAdapter(pbcard.NewCardQueryServiceClient(s.conn), pbcard.NewCardCommandServiceClient(s.conn))
-	saldoAdapter := adapter.NewSaldoAdapter(pbsaldo.NewSaldoQueryServiceClient(s.conn), pbsaldo.NewSaldoCommandServiceClient(s.conn))
+	cardQuery := pbcard.NewCardQueryServiceClient(s.conn)
+	cardCommand := pbcard.NewCardCommandServiceClient(s.conn)
 
-	// Topup Repositories with adapters
-	repos := repository.NewRepositories(gormDB, cardAdapter, saldoAdapter)
+	saldoSvc := saldo_service.NewService(&saldo_service.Deps{
+		Cache: cacheStore,
+		Repositories: saldo_repository.NewRepositories(gormDB, cardQuery, cardCommand,
+			saldo_repository.GuardOptions{Card: tests.Guard("card", log)}),
+		Logger: log,
+	})
+	saldoH := saldo_handler.NewHandler(saldoSvc)
+
+	pbsaldo.RegisterSaldoQueryServiceServer(s.grpcServer, saldoH)
+	pbsaldo.RegisterSaldoCommandServiceServer(s.grpcServer, saldoH)
+
+	go func() {
+		if err := s.grpcServer.Serve(s.lis); err != nil {
+		}
+	}()
+
+	// Topup repositories backed by the in-process card/saldo services.
+	repos := repository.NewRepositories(
+		gormDB,
+		pbcard.NewCardQueryServiceClient(s.conn),
+		pbcard.NewCardCommandServiceClient(s.conn),
+		pbsaldo.NewSaldoQueryServiceClient(s.conn),
+		pbsaldo.NewSaldoCommandServiceClient(s.conn),
+		repository.GuardOptions{
+			Card:  tests.Guard("card", log),
+			Saldo: tests.Guard("saldo", log),
+		},
+	)
 
 	topupSvc := service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -166,6 +181,9 @@ func (s *TopupGapiTestSuite) TearDownSuite() {
 	}
 	if s.grpcServer != nil {
 		s.grpcServer.Stop()
+	}
+	if s.userClient != nil {
+		s.userClient.Close()
 	}
 	if s.ts != nil {
 		s.ts.Teardown()

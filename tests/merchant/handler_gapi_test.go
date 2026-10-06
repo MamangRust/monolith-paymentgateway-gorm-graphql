@@ -32,6 +32,7 @@ type MerchantGapiTestSuite struct {
 	ts         *tests.TestSuite
 	merchantH  handler.Handler
 	userH      user_handler.Handler
+	userClient *tests.UserClient
 	userID     int32
 	merchantID int32
 }
@@ -47,8 +48,12 @@ func (s *MerchantGapiTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	repos := repository.NewRepositories(gormDB)
-	userRepos := user_repository.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	repos := repository.NewRepositories(gormDB, userClient.Query, repository.GuardOptions{User: userClient.Guard()})
+	userRepos := user_repository.NewRepositories(&user_repository.Deps{Db: gormDB})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
@@ -88,6 +93,9 @@ func (s *MerchantGapiTestSuite) SetupSuite() {
 }
 
 func (s *MerchantGapiTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	if s.ts != nil {
 		s.ts.Teardown()
 	}

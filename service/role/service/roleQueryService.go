@@ -132,6 +132,33 @@ func (s *roleQueryService) FindById(ctx context.Context, id int) (*models.Role, 
 	return res, nil
 }
 
+func (s *roleQueryService) FindByName(ctx context.Context, name string) (*models.Role, error) {
+	const method = "FindByName"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method,
+		attribute.String("name", name))
+
+	defer func() {
+		end(status)
+	}()
+
+	res, err := s.roleQuery.FindByName(ctx, name)
+	if err != nil {
+		status = "error"
+		return errorhandler.HandleError[*models.Role](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.String("role_name", name),
+		)
+	}
+
+	logSuccess("Successfully fetched role by name", zap.String("name", name))
+
+	return res, nil
+}
+
 func (s *roleQueryService) FindByUserId(ctx context.Context, id int) ([]*models.Role, error) {
 	const method = "FindByUserId"
 

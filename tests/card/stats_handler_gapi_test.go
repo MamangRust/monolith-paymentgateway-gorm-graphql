@@ -28,6 +28,7 @@ type CardStatsGapiTestSuite struct {
 	gormDB      *gorm.DB
 	ts          *tests.TestSuite
 	cardH       handler.Handler
+	userClient  *tests.UserClient
 	cardNumber1 string
 	cardNumber2 string
 	testYear    int
@@ -54,7 +55,11 @@ func (s *CardStatsGapiTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	repos := repository.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	repos := repository.NewRepositories(gormDB, userClient.Query, repository.GuardOptions{User: userClient.Guard()})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
@@ -116,8 +121,9 @@ func (s *CardStatsGapiTestSuite) SetupSuite() {
 }
 
 func (s *CardStatsGapiTestSuite) seedHistoricalData() {
+	// A card can only hold one active saldo (idx_saldos_card_number_active), so
+	// one row per card: Jan: 1000 (Card 1), Feb: 3000 (Card 2)
 	s.insertSaldo(s.cardNumber1, 1000, time.Date(s.testYear, 1, 15, 10, 0, 0, 0, time.UTC))
-	s.insertSaldo(s.cardNumber1, 2000, time.Date(s.testYear, 2, 15, 10, 0, 0, 0, time.UTC))
 	s.insertSaldo(s.cardNumber2, 3000, time.Date(s.testYear, 2, 20, 10, 0, 0, 0, time.UTC))
 
 	s.insertTopup(s.cardNumber1, 500, time.Date(s.testYear, 1, 10, 10, 0, 0, 0, time.UTC))
@@ -133,7 +139,8 @@ func (s *CardStatsGapiTestSuite) seedHistoricalData() {
 }
 
 func (s *CardStatsGapiTestSuite) insertSaldo(cardNumber string, amount int, t time.Time) {
-	s.gormDB.WithContext(context.Background()).Exec("INSERT INTO saldos (card_number, total_balance, created_at) VALUES (?, ?, ?)", cardNumber, amount, t)
+	err := s.gormDB.WithContext(context.Background()).Exec("INSERT INTO saldos (card_number, total_balance, created_at) VALUES (?, ?, ?)", cardNumber, amount, t).Error
+	s.Require().NoError(err)
 }
 
 func (s *CardStatsGapiTestSuite) insertTopup(cardNumber string, amount int, t time.Time) {
@@ -155,6 +162,9 @@ func (s *CardStatsGapiTestSuite) TearDownSuite() {
 	if s.grpcServer != nil {
 		s.grpcServer.Stop()
 	}
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	if s.ts != nil {
 		s.ts.Teardown()
 	}
@@ -168,13 +178,13 @@ func (s *CardStatsGapiTestSuite) TestBalanceGapi() {
 	s.NoError(err)
 	s.Equal("success", res.Status)
 	s.Equal(int64(1000), res.Data[0].TotalBalance) // Jan
-	s.Equal(int64(5000), res.Data[1].TotalBalance) // Feb
+	s.Equal(int64(3000), res.Data[1].TotalBalance) // Feb
 
 	// By Card Monthly
 	resByCard, err := s.balanceClient.FindMonthlyBalanceByCardNumber(ctx, &pbstats.FindYearBalanceCardNumber{CardNumber: s.cardNumber1, Year: int32(s.testYear)})
 	s.NoError(err)
+	s.Len(resByCard.Data, 1)
 	s.Equal(int64(1000), resByCard.Data[0].TotalBalance) // Jan Card 1
-	s.Equal(int64(2000), resByCard.Data[1].TotalBalance) // Feb Card 1
 }
 
 func (s *CardStatsGapiTestSuite) TestTopupGapi() {

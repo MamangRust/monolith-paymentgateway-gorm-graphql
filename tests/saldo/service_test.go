@@ -25,6 +25,7 @@ type SaldoServiceTestSuite struct {
 	suite.Suite
 	gormDB       *gorm.DB
 	ts           *tests.TestSuite
+	deps         *tests.DependencyClients
 	saldoService service.Service
 	saldoID      int
 	cardNumber   string
@@ -42,13 +43,17 @@ func (s *SaldoServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	repos := repository.NewRepositories(gormDB)
-
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
 	log, _ := logger.NewLogger("test", lp)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(redisClient, log, cacheMetrics)
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(gormDB, deps.CardQuery, deps.CardCommand)
 
 	s.saldoService = service.NewService(&service.Deps{
 		Repositories: repos,
@@ -81,6 +86,9 @@ func (s *SaldoServiceTestSuite) SetupSuite() {
 }
 
 func (s *SaldoServiceTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
 	s.ts.Teardown()
 }
 

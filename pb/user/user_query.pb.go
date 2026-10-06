@@ -22,6 +22,66 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type FindAllUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Search        string                 `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FindAllUserRequest) Reset() {
+	*x = FindAllUserRequest{}
+	mi := &file_user_user_query_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FindAllUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FindAllUserRequest) ProtoMessage() {}
+
+func (x *FindAllUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_query_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FindAllUserRequest.ProtoReflect.Descriptor instead.
+func (*FindAllUserRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_query_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *FindAllUserRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *FindAllUserRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *FindAllUserRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
 type ApiResponsePaginationUserDeleteAt struct {
 	state          protoimpl.MessageState  `protogen:"open.v1"`
 	Status         string                  `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
@@ -34,7 +94,7 @@ type ApiResponsePaginationUserDeleteAt struct {
 
 func (x *ApiResponsePaginationUserDeleteAt) Reset() {
 	*x = ApiResponsePaginationUserDeleteAt{}
-	mi := &file_user_user_query_proto_msgTypes[0]
+	mi := &file_user_user_query_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +106,7 @@ func (x *ApiResponsePaginationUserDeleteAt) String() string {
 func (*ApiResponsePaginationUserDeleteAt) ProtoMessage() {}
 
 func (x *ApiResponsePaginationUserDeleteAt) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_query_proto_msgTypes[0]
+	mi := &file_user_user_query_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +119,7 @@ func (x *ApiResponsePaginationUserDeleteAt) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ApiResponsePaginationUserDeleteAt.ProtoReflect.Descriptor instead.
 func (*ApiResponsePaginationUserDeleteAt) Descriptor() ([]byte, []int) {
-	return file_user_user_query_proto_rawDescGZIP(), []int{0}
+	return file_user_user_query_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ApiResponsePaginationUserDeleteAt) GetStatus() string {
@@ -102,7 +162,7 @@ type ApiResponsePaginationUser struct {
 
 func (x *ApiResponsePaginationUser) Reset() {
 	*x = ApiResponsePaginationUser{}
-	mi := &file_user_user_query_proto_msgTypes[1]
+	mi := &file_user_user_query_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -114,7 +174,7 @@ func (x *ApiResponsePaginationUser) String() string {
 func (*ApiResponsePaginationUser) ProtoMessage() {}
 
 func (x *ApiResponsePaginationUser) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_query_proto_msgTypes[1]
+	mi := &file_user_user_query_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -127,7 +187,7 @@ func (x *ApiResponsePaginationUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApiResponsePaginationUser.ProtoReflect.Descriptor instead.
 func (*ApiResponsePaginationUser) Descriptor() ([]byte, []int) {
-	return file_user_user_query_proto_rawDescGZIP(), []int{1}
+	return file_user_user_query_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ApiResponsePaginationUser) GetStatus() string {
@@ -162,7 +222,11 @@ var File_user_user_query_proto protoreflect.FileDescriptor
 
 const file_user_user_query_proto_rawDesc = "" +
 	"\n" +
-	"\x15user/user_query.proto\x12\apb.user\x1a\x0fuser/user.proto\x1a\x10common/api.proto\"\xcb\x01\n" +
+	"\x15user/user_query.proto\x12\apb.user\x1a\x0fuser/user.proto\x1a\x10common/api.proto\"]\n" +
+	"\x12FindAllUserRequest\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x16\n" +
+	"\x06search\x18\x03 \x01(\tR\x06search\"\xcb\x01\n" +
 	"!ApiResponsePaginationUserDeleteAt\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x121\n" +
@@ -172,12 +236,15 @@ const file_user_user_query_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12)\n" +
 	"\x04data\x18\x03 \x03(\v2\x15.pb.user.UserResponseR\x04data\x12A\n" +
-	"\x0epaginationMeta\x18\x04 \x01(\v2\x19.pb.common.PaginationMetaR\x0epaginationMeta2\xd9\x02\n" +
+	"\x0epaginationMeta\x18\x04 \x01(\v2\x19.pb.common.PaginationMetaR\x0epaginationMeta2\xe7\x04\n" +
 	"\x10UserQueryService\x12J\n" +
 	"\aFindAll\x12\x1b.pb.user.FindAllUserRequest\x1a\".pb.user.ApiResponsePaginationUser\x12B\n" +
-	"\bFindById\x12\x1c.pb.user.FindByIdUserRequest\x1a\x18.pb.user.ApiResponseUser\x12Y\n" +
-	"\fFindByActive\x12\x1b.pb.user.FindAllUserRequest\x1a*.pb.user.ApiResponsePaginationUserDeleteAt\"\x00\x12Z\n" +
-	"\rFindByTrashed\x12\x1b.pb.user.FindAllUserRequest\x1a*.pb.user.ApiResponsePaginationUserDeleteAt\"\x00B8Z6github.com/MamangRust/monolith-payment-gateway-pb/userb\x06proto3"
+	"\bFindById\x12\x1c.pb.user.FindByIdUserRequest\x1a\x18.pb.user.ApiResponseUser\x12P\n" +
+	"\vFindByEmail\x12\x1b.pb.user.FindByEmailRequest\x1a$.pb.user.ApiResponseUserWithPassword\x12b\n" +
+	"\x14FindByEmailAndVerify\x12$.pb.user.FindByEmailAndVerifyRequest\x1a$.pb.user.ApiResponseUserWithPassword\x12Z\n" +
+	"\x16FindByVerificationCode\x12&.pb.user.FindByVerificationCodeRequest\x1a\x18.pb.user.ApiResponseUser\x12W\n" +
+	"\fFindByActive\x12\x1b.pb.user.FindAllUserRequest\x1a*.pb.user.ApiResponsePaginationUserDeleteAt\x12X\n" +
+	"\rFindByTrashed\x12\x1b.pb.user.FindAllUserRequest\x1a*.pb.user.ApiResponsePaginationUserDeleteAtB8Z6github.com/MamangRust/monolith-payment-gateway-pb/userb\x06proto3"
 
 var (
 	file_user_user_query_proto_rawDescOnce sync.Once
@@ -191,35 +258,45 @@ func file_user_user_query_proto_rawDescGZIP() []byte {
 	return file_user_user_query_proto_rawDescData
 }
 
-var file_user_user_query_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_user_user_query_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_user_user_query_proto_goTypes = []any{
-	(*ApiResponsePaginationUserDeleteAt)(nil), // 0: pb.user.ApiResponsePaginationUserDeleteAt
-	(*ApiResponsePaginationUser)(nil),         // 1: pb.user.ApiResponsePaginationUser
-	(*UserResponseDeleteAt)(nil),              // 2: pb.user.UserResponseDeleteAt
-	(*common.PaginationMeta)(nil),             // 3: pb.common.PaginationMeta
-	(*UserResponse)(nil),                      // 4: pb.user.UserResponse
-	(*FindAllUserRequest)(nil),                // 5: pb.user.FindAllUserRequest
+	(*FindAllUserRequest)(nil),                // 0: pb.user.FindAllUserRequest
+	(*ApiResponsePaginationUserDeleteAt)(nil), // 1: pb.user.ApiResponsePaginationUserDeleteAt
+	(*ApiResponsePaginationUser)(nil),         // 2: pb.user.ApiResponsePaginationUser
+	(*UserResponseDeleteAt)(nil),              // 3: pb.user.UserResponseDeleteAt
+	(*common.PaginationMeta)(nil),             // 4: pb.common.PaginationMeta
+	(*UserResponse)(nil),                      // 5: pb.user.UserResponse
 	(*FindByIdUserRequest)(nil),               // 6: pb.user.FindByIdUserRequest
-	(*ApiResponseUser)(nil),                   // 7: pb.user.ApiResponseUser
+	(*FindByEmailRequest)(nil),                // 7: pb.user.FindByEmailRequest
+	(*FindByEmailAndVerifyRequest)(nil),       // 8: pb.user.FindByEmailAndVerifyRequest
+	(*FindByVerificationCodeRequest)(nil),     // 9: pb.user.FindByVerificationCodeRequest
+	(*ApiResponseUser)(nil),                   // 10: pb.user.ApiResponseUser
+	(*ApiResponseUserWithPassword)(nil),       // 11: pb.user.ApiResponseUserWithPassword
 }
 var file_user_user_query_proto_depIdxs = []int32{
-	2, // 0: pb.user.ApiResponsePaginationUserDeleteAt.data:type_name -> pb.user.UserResponseDeleteAt
-	3, // 1: pb.user.ApiResponsePaginationUserDeleteAt.paginationMeta:type_name -> pb.common.PaginationMeta
-	4, // 2: pb.user.ApiResponsePaginationUser.data:type_name -> pb.user.UserResponse
-	3, // 3: pb.user.ApiResponsePaginationUser.paginationMeta:type_name -> pb.common.PaginationMeta
-	5, // 4: pb.user.UserQueryService.FindAll:input_type -> pb.user.FindAllUserRequest
-	6, // 5: pb.user.UserQueryService.FindById:input_type -> pb.user.FindByIdUserRequest
-	5, // 6: pb.user.UserQueryService.FindByActive:input_type -> pb.user.FindAllUserRequest
-	5, // 7: pb.user.UserQueryService.FindByTrashed:input_type -> pb.user.FindAllUserRequest
-	1, // 8: pb.user.UserQueryService.FindAll:output_type -> pb.user.ApiResponsePaginationUser
-	7, // 9: pb.user.UserQueryService.FindById:output_type -> pb.user.ApiResponseUser
-	0, // 10: pb.user.UserQueryService.FindByActive:output_type -> pb.user.ApiResponsePaginationUserDeleteAt
-	0, // 11: pb.user.UserQueryService.FindByTrashed:output_type -> pb.user.ApiResponsePaginationUserDeleteAt
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3,  // 0: pb.user.ApiResponsePaginationUserDeleteAt.data:type_name -> pb.user.UserResponseDeleteAt
+	4,  // 1: pb.user.ApiResponsePaginationUserDeleteAt.paginationMeta:type_name -> pb.common.PaginationMeta
+	5,  // 2: pb.user.ApiResponsePaginationUser.data:type_name -> pb.user.UserResponse
+	4,  // 3: pb.user.ApiResponsePaginationUser.paginationMeta:type_name -> pb.common.PaginationMeta
+	0,  // 4: pb.user.UserQueryService.FindAll:input_type -> pb.user.FindAllUserRequest
+	6,  // 5: pb.user.UserQueryService.FindById:input_type -> pb.user.FindByIdUserRequest
+	7,  // 6: pb.user.UserQueryService.FindByEmail:input_type -> pb.user.FindByEmailRequest
+	8,  // 7: pb.user.UserQueryService.FindByEmailAndVerify:input_type -> pb.user.FindByEmailAndVerifyRequest
+	9,  // 8: pb.user.UserQueryService.FindByVerificationCode:input_type -> pb.user.FindByVerificationCodeRequest
+	0,  // 9: pb.user.UserQueryService.FindByActive:input_type -> pb.user.FindAllUserRequest
+	0,  // 10: pb.user.UserQueryService.FindByTrashed:input_type -> pb.user.FindAllUserRequest
+	2,  // 11: pb.user.UserQueryService.FindAll:output_type -> pb.user.ApiResponsePaginationUser
+	10, // 12: pb.user.UserQueryService.FindById:output_type -> pb.user.ApiResponseUser
+	11, // 13: pb.user.UserQueryService.FindByEmail:output_type -> pb.user.ApiResponseUserWithPassword
+	11, // 14: pb.user.UserQueryService.FindByEmailAndVerify:output_type -> pb.user.ApiResponseUserWithPassword
+	10, // 15: pb.user.UserQueryService.FindByVerificationCode:output_type -> pb.user.ApiResponseUser
+	1,  // 16: pb.user.UserQueryService.FindByActive:output_type -> pb.user.ApiResponsePaginationUserDeleteAt
+	1,  // 17: pb.user.UserQueryService.FindByTrashed:output_type -> pb.user.ApiResponsePaginationUserDeleteAt
+	11, // [11:18] is the sub-list for method output_type
+	4,  // [4:11] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_user_user_query_proto_init() }
@@ -234,7 +311,7 @@ func file_user_user_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_user_query_proto_rawDesc), len(file_user_user_query_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

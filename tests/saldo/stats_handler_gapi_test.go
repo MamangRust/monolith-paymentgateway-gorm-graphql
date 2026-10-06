@@ -43,7 +43,7 @@ func (s *SaldoStatsHandlerGapiTestSuite) SetupSuite() {
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
 	s.gormDB = gormDB
-	repos := repository.NewRepositories(gormDB)
+	repos := repository.NewRepositories(gormDB, nil, nil)
 
 	zapLog := zap.NewNop()
 	myLogger := &logger.Logger{Log: zapLog}

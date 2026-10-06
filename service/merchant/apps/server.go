@@ -12,12 +12,16 @@ import (
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/merchant"
 	pbstats "github.com/MamangRust/monolith-payment-gateway-pb/merchant/stats"
 	pbdocument "github.com/MamangRust/monolith-payment-gateway-pb/merchant_document"
+	pbuser "github.com/MamangRust/monolith-payment-gateway-pb/user"
+	adapter "github.com/MamangRust/monolith-payment-gateway-pkg/adapter"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/kafka"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/outbox"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/resilience"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/server"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func NewServer(cfg *server.Config) (*server.GRPCServer, error) {
@@ -51,7 +55,23 @@ func NewServer(cfg *server.Config) (*server.GRPCServer, error) {
 		})
 	}
 
-	repos := repository.NewRepositories(srv.GormDB)
+	userConn, err := grpc.NewClient(
+		viper.GetString("GRPC_USER_ADDR"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		srv.Cleanup()
+		return nil, fmt.Errorf("failed to connect to user service: %w", err)
+	}
+	srv.AddCleanupHook(userConn.Close)
+
+	repos := repository.NewRepositories(srv.GormDB, pbuser.NewUserQueryServiceClient(userConn),
+		repository.GuardOptions{
+			User: []adapter.GuardOption{
+				adapter.WithDependencyGuard(resilience.NewDependencyGuard("user", 5, 30, 100, 3*time.Second, srv.Logger)),
+			},
+		},
+	)
 	svc := service.NewService(&service.Deps{
 		Cache:        srv.CacheStore,
 		Logger:       srv.Logger,

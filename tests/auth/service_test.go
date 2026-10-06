@@ -25,6 +25,8 @@ type AuthServiceTestSuite struct {
 	gormDB      *gorm.DB
 	ts          *tests.TestSuite
 	redisClient *redis.Client
+	roleSvc     *tests.InProcessRoleService
+	userClient  *tests.UserClient
 	service     *service.Service
 	email       string
 	password    string
@@ -42,13 +44,28 @@ func (s *AuthServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.gormDB = gormDB
 
-	repos := repository.NewRepositories(gormDB)
-
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
 	log, _ := logger.NewLogger("test", lp)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(s.redisClient, log, cacheMetrics)
+
+	roleSvc, err := tests.StartInProcessRoleService(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.roleSvc = roleSvc
+
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	repos := repository.NewRepositories(&repository.Deps{
+		Db:                gormDB,
+		UserQueryClient:   userClient.Query,
+		UserCommandClient: userClient.Command,
+		RoleQueryClient:   roleSvc.Role,
+		RoleCommandClient: roleSvc.RoleCommand,
+		UserRoleClient:    roleSvc.UserRole,
+	})
 
 	tokenManager, _ := auth.NewManager("mysecret")
 	hasher := hash.NewHashingPassword()
@@ -70,8 +87,22 @@ func (s *AuthServiceTestSuite) SetupSuite() {
 }
 
 func (s *AuthServiceTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
+	if s.roleSvc != nil {
+		s.roleSvc.Close()
+	}
 	s.redisClient.Close()
 	s.ts.Teardown()
+}
+
+// verifyUser marks a registered user as verified. Register always creates the
+// account with is_verified = false, while Login only looks up verified accounts.
+func (s *AuthServiceTestSuite) verifyUser(email string) {
+	err := s.gormDB.WithContext(context.Background()).
+		Exec("UPDATE users SET is_verified = true WHERE email = ?", email).Error
+	s.Require().NoError(err)
 }
 
 func (s *AuthServiceTestSuite) Test1_Register() {
@@ -88,6 +119,8 @@ func (s *AuthServiceTestSuite) Test1_Register() {
 	s.NoError(err)
 	s.NotNil(res)
 	s.Equal(s.email, res.Email)
+
+	s.verifyUser(s.email)
 }
 
 func (s *AuthServiceTestSuite) Test2_Login() {
@@ -119,6 +152,7 @@ func (s *AuthServiceTestSuite) Test4_LoginLockout() {
 	}
 	_, err := s.service.Register.Register(ctx, regReq)
 	s.NoError(err)
+	s.verifyUser(email)
 
 	loginReq := &requests.AuthRequest{
 		Email:    email,

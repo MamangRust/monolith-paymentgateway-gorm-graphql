@@ -24,6 +24,7 @@ const (
 	RoleService_FindByActive_FullMethodName  = "/pb.role.RoleService/FindByActive"
 	RoleService_FindByTrashed_FullMethodName = "/pb.role.RoleService/FindByTrashed"
 	RoleService_FindByUserId_FullMethodName  = "/pb.role.RoleService/FindByUserId"
+	RoleService_FindByName_FullMethodName    = "/pb.role.RoleService/FindByName"
 )
 
 // RoleServiceClient is the client API for RoleService service.
@@ -35,6 +36,7 @@ type RoleServiceClient interface {
 	FindByActive(ctx context.Context, in *FindAllRoleRequest, opts ...grpc.CallOption) (*ApiResponsePaginationRoleDeleteAt, error)
 	FindByTrashed(ctx context.Context, in *FindAllRoleRequest, opts ...grpc.CallOption) (*ApiResponsePaginationRoleDeleteAt, error)
 	FindByUserId(ctx context.Context, in *FindByIdUserRoleRequest, opts ...grpc.CallOption) (*ApiResponsesRole, error)
+	FindByName(ctx context.Context, in *FindByNameRoleRequest, opts ...grpc.CallOption) (*ApiResponseRole, error)
 }
 
 type roleServiceClient struct {
@@ -95,6 +97,16 @@ func (c *roleServiceClient) FindByUserId(ctx context.Context, in *FindByIdUserRo
 	return out, nil
 }
 
+func (c *roleServiceClient) FindByName(ctx context.Context, in *FindByNameRoleRequest, opts ...grpc.CallOption) (*ApiResponseRole, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApiResponseRole)
+	err := c.cc.Invoke(ctx, RoleService_FindByName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RoleServiceServer is the server API for RoleService service.
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type RoleServiceServer interface {
 	FindByActive(context.Context, *FindAllRoleRequest) (*ApiResponsePaginationRoleDeleteAt, error)
 	FindByTrashed(context.Context, *FindAllRoleRequest) (*ApiResponsePaginationRoleDeleteAt, error)
 	FindByUserId(context.Context, *FindByIdUserRoleRequest) (*ApiResponsesRole, error)
+	FindByName(context.Context, *FindByNameRoleRequest) (*ApiResponseRole, error)
 	mustEmbedUnimplementedRoleServiceServer()
 }
 
@@ -128,6 +141,9 @@ func (UnimplementedRoleServiceServer) FindByTrashed(context.Context, *FindAllRol
 }
 func (UnimplementedRoleServiceServer) FindByUserId(context.Context, *FindByIdUserRoleRequest) (*ApiResponsesRole, error) {
 	return nil, status.Error(codes.Unimplemented, "method FindByUserId not implemented")
+}
+func (UnimplementedRoleServiceServer) FindByName(context.Context, *FindByNameRoleRequest) (*ApiResponseRole, error) {
+	return nil, status.Error(codes.Unimplemented, "method FindByName not implemented")
 }
 func (UnimplementedRoleServiceServer) mustEmbedUnimplementedRoleServiceServer() {}
 func (UnimplementedRoleServiceServer) testEmbeddedByValue()                     {}
@@ -240,6 +256,24 @@ func _RoleService_FindByUserId_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoleService_FindByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindByNameRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoleServiceServer).FindByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoleService_FindByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoleServiceServer).FindByName(ctx, req.(*FindByNameRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RoleService_ServiceDesc is the grpc.ServiceDesc for RoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +300,10 @@ var RoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FindByUserId",
 			Handler:    _RoleService_FindByUserId_Handler,
+		},
+		{
+			MethodName: "FindByName",
+			Handler:    _RoleService_FindByName_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

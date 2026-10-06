@@ -19,12 +19,13 @@ import (
 
 type TopupRepositoryTestSuite struct {
 	suite.Suite
-	gormDB   *gorm.DB
-	ts       *tests.TestSuite
-	repo     repository.Repositories
-	cardRepo *card_repo.Repositories
-	userRepo user_repo.Repositories
-	userID   int
+	gormDB     *gorm.DB
+	ts         *tests.TestSuite
+	repo       repository.Repositories
+	cardRepo   *card_repo.Repositories
+	userRepo   *user_repo.Repositories
+	userClient *tests.UserClient
+	userID     int
 }
 
 func (s *TopupRepositoryTestSuite) SetupSuite() {
@@ -36,13 +37,18 @@ func (s *TopupRepositoryTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.Require().NoError(err)
 
-	s.userRepo = user_repo.NewRepositories(gormDB)
-	s.cardRepo = card_repo.NewRepositories(gormDB)
-	// We don't need real adapters for repository integration tests because they are not used in repo methods
-	s.repo = repository.NewRepositories(gormDB, nil, nil)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	s.userRepo = user_repo.NewRepositories(&user_repo.Deps{Db: gormDB})
+	s.cardRepo = card_repo.NewRepositories(gormDB, userClient.Query, card_repo.GuardOptions{User: userClient.Guard()})
+	// We don't need real gRPC clients for repository integration tests because
+	// the outbound adapters are not exercised by the DB-backed repo methods.
+	s.repo = repository.NewRepositories(gormDB, nil, nil, nil, nil)
 
 	// Create user
-	user, err := s.userRepo.UserCommand().CreateUser(context.Background(), &requests.CreateUserRequest{
+	user, err := s.userRepo.UserCommand.CreateUser(context.Background(), &requests.CreateUserRequest{
 		FirstName: "Topup",
 		LastName:  "Owner",
 		Email:     fmt.Sprintf("topup.owner-%d@example.com", time.Now().UnixNano()),
@@ -53,6 +59,9 @@ func (s *TopupRepositoryTestSuite) SetupSuite() {
 }
 
 func (s *TopupRepositoryTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

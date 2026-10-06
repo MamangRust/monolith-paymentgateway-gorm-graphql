@@ -114,6 +114,81 @@ func (s *userQueryService) FindByID(ctx context.Context, id int) (*models.UserBy
 	return user, nil
 }
 
+func (s *userQueryService) FindByEmail(ctx context.Context, email string) (*models.UserByEmailWithPasswordRow, error) {
+	const method = "FindByEmail"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method, attribute.String("email", email))
+
+	defer func() {
+		end(status)
+	}()
+
+	user, err := s.userQueryRepository.FindByEmail(ctx, email)
+	if err != nil {
+		status = "error"
+		return errorhandler.HandleError[*models.UserByEmailWithPasswordRow](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.String("email", email),
+		)
+	}
+
+	logSuccess("Successfully fetched user by email", zap.String("email", email))
+	return user, nil
+}
+
+func (s *userQueryService) FindByEmailAndVerify(ctx context.Context, email string) (*models.UserByEmailWithPasswordRow, error) {
+	const method = "FindByEmailAndVerify"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method, attribute.String("email", email))
+
+	defer func() {
+		end(status)
+	}()
+
+	user, err := s.userQueryRepository.FindByEmailAndVerify(ctx, email)
+	if err != nil {
+		status = "error"
+		return errorhandler.HandleError[*models.UserByEmailWithPasswordRow](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.String("email", email),
+		)
+	}
+
+	logSuccess("Successfully fetched verified user by email", zap.String("email", email))
+	return user, nil
+}
+
+func (s *userQueryService) FindByVerificationCode(ctx context.Context, code string) (*models.UserByVerificationCodeRow, error) {
+	const method = "FindByVerificationCode"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method, attribute.String("code", code))
+
+	defer func() {
+		end(status)
+	}()
+
+	user, err := s.userQueryRepository.FindByVerificationCode(ctx, code)
+	if err != nil {
+		status = "error"
+		return errorhandler.HandleError[*models.UserByVerificationCodeRow](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.String("code", code),
+		)
+	}
+
+	logSuccess("Successfully fetched user by verification code", zap.String("code", code))
+	return user, nil
+}
+
 func (s *userQueryService) FindByActive(ctx context.Context, req *requests.FindAllUsers) ([]*models.UserActiveRow, *int, error) {
 	const method = "FindByActive"
 

@@ -13,6 +13,7 @@ import (
 	"github.com/MamangRust/monolith-payment-gateway-pkg/adapter"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/kafka"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/outbox"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/resilience"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/server"
 	"github.com/MamangRust/monolith-payment-gateway-withdraw/handler"
 	"github.com/MamangRust/monolith-payment-gateway-withdraw/repository"
@@ -61,14 +62,26 @@ func NewServer(cfg *server.Config) (*server.GRPCServer, error) {
 	cardClientQuery := pbcard.NewCardQueryServiceClient(connCard)
 	cardClientCmd := pbcard.NewCardCommandServiceClient(connCard)
 
-	saldoAdapter := adapter.NewSaldoAdapter(saldoClientQuery, saldoClientCmd)
-	cardAdapter := adapter.NewCardAdapter(cardClientQuery, cardClientCmd)
-
 	dailyWithdrawLimit := viper.GetInt64("WITHDRAW_DAILY_LIMIT")
 	if dailyWithdrawLimit <= 0 {
 		dailyWithdrawLimit = 10_000_000
 	}
-	repos := repository.NewRepositories(srv.GormDB, cardAdapter, saldoAdapter, dailyWithdrawLimit)
+	repos := repository.NewRepositories(
+		srv.GormDB,
+		cardClientQuery,
+		cardClientCmd,
+		saldoClientQuery,
+		saldoClientCmd,
+		dailyWithdrawLimit,
+		repository.GuardOptions{
+			Card: []adapter.GuardOption{
+				adapter.WithDependencyGuard(resilience.NewDependencyGuard("card", 5, 30, 100, 3*time.Second, srv.Logger)),
+			},
+			Saldo: []adapter.GuardOption{
+				adapter.WithDependencyGuard(resilience.NewDependencyGuard("saldo", 5, 30, 100, 3*time.Second, srv.Logger)),
+			},
+		},
+	)
 	myKafka := kafka.NewKafka(srv.Logger, []string{viper.GetString("KAFKA_BROKERS")})
 	srv.AddCleanupHook(myKafka.Close)
 	relay, relayErr := outbox.NewRelay(srv.GormDB, myKafka, outbox.RelayConfig{})

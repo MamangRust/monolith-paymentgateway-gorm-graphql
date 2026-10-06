@@ -3,6 +3,7 @@ package apps
 import (
 	"context"
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/role"
+	pbuserroles "github.com/MamangRust/monolith-payment-gateway-pb/user_role"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/kafka"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/server"
 	"github.com/MamangRust/monolith-payment-gateway-role/handler"
@@ -41,6 +42,7 @@ func NewServer(cfg *server.Config) (*server.GRPCServer, error) {
 	srv.RegisterServices = func(gs *grpc.Server) {
 		pb.RegisterRoleServiceServer(gs, h.RoleQuery)
 		pb.RegisterRoleCommandServiceServer(gs, h.RoleCommand)
+		pbuserroles.RegisterUserRoleServiceServer(gs, h.UserRole)
 	}
 
 	return srv, nil

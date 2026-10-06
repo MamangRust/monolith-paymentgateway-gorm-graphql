@@ -30,5 +30,5 @@ type SaldoCommandRepository interface {
 }
 
 type CardRepository interface {
-	FindCardByCardNumber(ctx context.Context, card_number string) (*models.Card, error)
+	FindCardByCardNumber(ctx context.Context, card_number string) (*models.CardAllFieldsRow, error)
 }

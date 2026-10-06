@@ -11,6 +11,9 @@ import (
 type UserQueryService interface {
 	FindAll(ctx context.Context, req *requests.FindAllUsers) ([]*models.UserRow, *int, error)
 	FindByID(ctx context.Context, id int) (*models.UserByIDRow, error)
+	FindByEmail(ctx context.Context, email string) (*models.UserByEmailWithPasswordRow, error)
+	FindByEmailAndVerify(ctx context.Context, email string) (*models.UserByEmailWithPasswordRow, error)
+	FindByVerificationCode(ctx context.Context, code string) (*models.UserByVerificationCodeRow, error)
 	FindByActive(ctx context.Context, req *requests.FindAllUsers) ([]*models.UserActiveRow, *int, error)
 	FindByTrashed(ctx context.Context, req *requests.FindAllUsers) ([]*models.UserTrashedRow, *int, error)
 }
@@ -18,7 +21,10 @@ type UserQueryService interface {
 // UserCommandService handles command operations related to user management.
 type UserCommandService interface {
 	CreateUser(ctx context.Context, request *requests.CreateUserRequest) (*models.CreateUserRow, error)
+	CreateUserFromRegister(ctx context.Context, request *requests.RegisterRequest) (*models.CreateUserRow, error)
 	UpdateUser(ctx context.Context, request *requests.UpdateUserRequest) (*models.UpdateUserRow, error)
+	UpdateUserIsVerified(ctx context.Context, userID int, isVerified bool) (*models.UserIsVerifiedRow, error)
+	UpdateUserPassword(ctx context.Context, userID int, password string) (*models.UserPasswordRow, error)
 	TrashedUser(ctx context.Context, user_id int) (*models.TrashUserRow, error)
 	RestoreUser(ctx context.Context, user_id int) (*models.RestoreUserRow, error)
 	DeleteUserPermanent(ctx context.Context, user_id int) (bool, error)

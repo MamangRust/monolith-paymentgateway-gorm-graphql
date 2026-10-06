@@ -30,6 +30,7 @@ type TransferGapiTestSuite struct {
 	suite.Suite
 	gormDB        *gorm.DB
 	ts            *tests.TestSuite
+	deps          *tests.DependencyClients
 	redisClient   *redis.Client
 	grpcServer    *grpc.Server
 	commandClient pb.TransferCommandServiceClient
@@ -39,6 +40,7 @@ type TransferGapiTestSuite struct {
 	userRepo      user_repo.UserCommandRepository
 	cardRepo      card_repo.Repositories
 	saldoRepo     saldo_repo.Repositories
+	userClient    *tests.UserClient
 
 	senderCardNumber   string
 	receiverCardNumber string
@@ -52,13 +54,14 @@ func (s *TransferGapiTestSuite) SetupSuite() {
 
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
+
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
 	// Repositories for seeding
 	s.userRepo = user_repo.NewUserCommandRepository(gormDB)
-	s.cardRepo = *card_repo.NewRepositories(gormDB)
-	s.saldoRepo = saldo_repo.NewRepositories(gormDB)
-
-	// Transfer repos
-	s.repos = repository.NewRepositories(gormDB, s.saldoRepo, s.cardRepo.CardQuery)
+	s.cardRepo = *card_repo.NewRepositories(gormDB, userClient.Query, card_repo.GuardOptions{User: userClient.Guard()})
 
 	opts, err := redis.ParseURL(s.ts.RedisURL)
 	s.Require().NoError(err)
@@ -70,6 +73,25 @@ func (s *TransferGapiTestSuite) SetupSuite() {
 	_, _ = observability.NewObservability("test", log)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(s.redisClient, log, cacheMetrics)
+
+	// Transfer repos backed by the in-process card/saldo services.
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	s.saldoRepo = saldo_repo.NewRepositories(gormDB, deps.CardQuery, deps.CardCommand)
+
+	s.repos = repository.NewRepositories(
+		gormDB,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		deps.CardQuery,
+		deps.CardCommand,
+		repository.GuardOptions{
+			Saldo: tests.Guard("saldo", log),
+			Card:  tests.Guard("card", log),
+		},
+	)
 
 	transferService := service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -157,6 +179,12 @@ func (s *TransferGapiTestSuite) TearDownSuite() {
 	}
 	if s.grpcServer != nil {
 		s.grpcServer.Stop()
+	}
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
+	if s.deps != nil {
+		s.deps.Close()
 	}
 	if s.redisClient != nil {
 		s.redisClient.Close()

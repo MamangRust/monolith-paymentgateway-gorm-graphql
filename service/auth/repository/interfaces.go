@@ -3,20 +3,23 @@ package repository
 import (
 	"context"
 
+	roleadapter "github.com/MamangRust/monolith-payment-gateway-pkg/adapter/role"
+	useradapter "github.com/MamangRust/monolith-payment-gateway-pkg/adapter/user"
+	userroleadapter "github.com/MamangRust/monolith-payment-gateway-pkg/adapter/user_role"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/database/models"
 	"github.com/MamangRust/monolith-payment-gateway-shared/domain/requests"
 )
 
-//go:generate mockgen -source=interfaces.go -destination=mocks/mock.go
-type UserRepository interface {
-	FindByEmail(ctx context.Context, email string) (*models.UserByEmailRow, error)
-	FindByEmailAndVerify(ctx context.Context, email string) (*models.UserByEmailWithPasswordRow, error)
-	FindById(ctx context.Context, user_id int) (*models.UserByIDRow, error)
-	CreateUser(ctx context.Context, request *requests.RegisterRequest) (*models.CreateUserRow, error)
-	UpdateUserIsVerified(ctx context.Context, user_id int, is_verified bool) (*models.UserIsVerifiedRow, error)
-	UpdateUserPassword(ctx context.Context, user_id int, password string) (*models.UserPasswordRow, error)
-	FindByVerificationCode(ctx context.Context, verification_code string) (*models.UserByVerificationCodeRow, error)
-}
+// UserRepository delegates to the shared user adapter, whose RPCs are served by
+// the user gRPC service.
+type UserRepository = *useradapter.Repository
+
+// UserRoleRepository delegates to the shared user_role adapter, whose RPCs are
+// served piggybacked on the role gRPC server.
+type UserRoleRepository = *userroleadapter.Repository
+
+// RoleRepository delegates to the shared role adapter (query side).
+type RoleRepository = *roleadapter.Repository
 
 type ResetTokenRepository interface {
 	FindByToken(ctx context.Context, code string) (*models.ResetTokenRow, error)
@@ -31,14 +34,4 @@ type RefreshTokenRepository interface {
 	UpdateRefreshToken(ctx context.Context, req *requests.UpdateRefreshToken) (*models.RefreshToken, error)
 	DeleteRefreshToken(ctx context.Context, token string) error
 	DeleteRefreshTokenByUserId(ctx context.Context, user_id int) error
-}
-
-type UserRoleRepository interface {
-	AssignRoleToUser(ctx context.Context, req *requests.CreateUserRoleRequest) (*models.UserRole, error)
-	RemoveRoleFromUser(ctx context.Context, req *requests.RemoveUserRoleRequest) error
-}
-
-type RoleRepository interface {
-	FindById(ctx context.Context, id int) (*models.Role, error)
-	FindByName(ctx context.Context, name string) (*models.Role, error)
 }

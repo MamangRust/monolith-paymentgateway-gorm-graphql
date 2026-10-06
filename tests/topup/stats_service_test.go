@@ -15,8 +15,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 
-	card_repo "github.com/MamangRust/monolith-payment-gateway-card/repository"
-	saldo_repo "github.com/MamangRust/monolith-payment-gateway-saldo/repository"
 	"gorm.io/gorm"
 )
 
@@ -24,6 +22,7 @@ type TopupStatsServiceTestSuite struct {
 	suite.Suite
 	gormDB      *gorm.DB
 	ts          *tests.TestSuite
+	deps        *tests.DependencyClients
 	svc         service.Service
 	userID      int32
 	cardNumber1 string
@@ -39,14 +38,6 @@ func (s *TopupStatsServiceTestSuite) SetupSuite() {
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
 	s.gormDB = gormDB
-	realSaldo := &realSaldoRepo{repo: saldo_repo.NewRepositories(gormDB)}
-	realCard := &realCardRepo{
-		query: card_repo.NewCardQueryRepository(gormDB),
-		cmd:   card_repo.NewCardCommandRepository(gormDB),
-	}
-
-	repos := repository.NewRepositories(gormDB, realCard, realSaldo)
-
 	// Setup Logger
 	zapLog := zap.NewNop()
 	myLogger := &logger.Logger{Log: zapLog}
@@ -56,6 +47,22 @@ func (s *TopupStatsServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(redisOption)
 	cacheStore := cache.NewCacheStore(redisClient, myLogger, &dummyCacheMetrics{})
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, myLogger)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(
+		gormDB,
+		deps.CardQuery,
+		deps.CardCommand,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		repository.GuardOptions{
+			Card:  tests.Guard("card", myLogger),
+			Saldo: tests.Guard("saldo", myLogger),
+		},
+	)
 
 	s.svc = service.NewService(&service.Deps{
 		Kafka:        nil, // Not used in stats
@@ -87,6 +94,9 @@ func (s *TopupStatsServiceTestSuite) SetupSuite() {
 }
 
 func (s *TopupStatsServiceTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
 	s.ts.Teardown()
 }
 

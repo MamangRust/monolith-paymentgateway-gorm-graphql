@@ -18,11 +18,12 @@ import (
 
 type MerchantRepositoryTestSuite struct {
 	suite.Suite
-	gormDB   *gorm.DB
-	ts       *tests.TestSuite
-	repo     repository.Repositories
-	userRepo user_repo.Repositories
-	userID   int
+	gormDB     *gorm.DB
+	ts         *tests.TestSuite
+	repo       repository.Repositories
+	userRepo   *user_repo.Repositories
+	userClient *tests.UserClient
+	userID     int
 }
 
 func (s *MerchantRepositoryTestSuite) SetupSuite() {
@@ -34,11 +35,15 @@ func (s *MerchantRepositoryTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.Require().NoError(err)
 
-	s.repo = repository.NewRepositories(gormDB)
-	s.userRepo = user_repo.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	s.repo = repository.NewRepositories(gormDB, userClient.Query, repository.GuardOptions{User: userClient.Guard()})
+	s.userRepo = user_repo.NewRepositories(&user_repo.Deps{Db: gormDB})
 
 	// Seed User
-	user, err := s.userRepo.UserCommand().CreateUser(context.Background(), &requests.CreateUserRequest{
+	user, err := s.userRepo.UserCommand.CreateUser(context.Background(), &requests.CreateUserRequest{
 		FirstName: "Merchant",
 		LastName:  "Owner",
 		Email:     fmt.Sprintf("merchant.owner-%d@example.com", time.Now().UnixNano()),
@@ -49,6 +54,9 @@ func (s *MerchantRepositoryTestSuite) SetupSuite() {
 }
 
 func (s *MerchantRepositoryTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

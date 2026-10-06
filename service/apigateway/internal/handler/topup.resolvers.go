@@ -6,7 +6,7 @@ package graph
 
 import (
 	"context"
-	errors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
+	sharedErrors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
 
 	"github.com/MamangRust/monolith-graphql-apigateway/internal/model"
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/topup"
@@ -25,7 +25,7 @@ func (r *mutationResolver) CreateTopup(ctx context.Context, input model.CreateTo
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		req := &pb.CreateTopupRequest{
@@ -50,7 +50,7 @@ func (r *mutationResolver) UpdateTopup(ctx context.Context, input model.UpdateTo
 	return ResolverHandle(r.ResolverHandle, "UpdateTopup", ctx, func(ctx context.Context) (*model.APIResponseTopup, error) {
 		id := int(input.TopupID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: topup ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: topup ID cannot be zero")
 		}
 
 		request := requests.UpdateTopupRequest{
@@ -62,7 +62,7 @@ func (r *mutationResolver) UpdateTopup(ctx context.Context, input model.UpdateTo
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		req := &pb.UpdateTopupRequest{
@@ -90,7 +90,7 @@ func (r *mutationResolver) TrashedTopup(ctx context.Context, input model.FindByI
 	return ResolverHandle(r.ResolverHandle, "TrashedTopup", ctx, func(ctx context.Context) (*model.APIResponseTopupDeleteAt, error) {
 		id := int(input.TopupID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: topup ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: topup ID cannot be zero")
 		}
 
 		topup, err := r.TopupGraphql.TopupClient.TopupCommandClient.TrashedTopup(ctx, &pb.FindByIdTopupRequest{
@@ -113,7 +113,7 @@ func (r *mutationResolver) RestoreTopup(ctx context.Context, input model.FindByI
 	return ResolverHandle(r.ResolverHandle, "RestoreTopup", ctx, func(ctx context.Context) (*model.APIResponseTopupDeleteAt, error) {
 		id := int(input.TopupID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: topup ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: topup ID cannot be zero")
 		}
 
 		topup, err := r.TopupGraphql.TopupClient.TopupCommandClient.RestoreTopup(ctx, &pb.FindByIdTopupRequest{
@@ -136,7 +136,7 @@ func (r *mutationResolver) DeleteTopupPermanent(ctx context.Context, input model
 	return ResolverHandle(r.ResolverHandle, "DeleteTopupPermanent", ctx, func(ctx context.Context) (*model.APIResponseTopupDelete, error) {
 		id := int(input.TopupID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: topup ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: topup ID cannot be zero")
 		}
 
 		res, err := r.TopupGraphql.TopupClient.TopupCommandClient.DeleteTopupPermanent(ctx, &pb.FindByIdTopupRequest{TopupId: int32(id)})
@@ -282,7 +282,7 @@ func (r *queryResolver) FindByIDTopup(ctx context.Context, input model.FindByIDT
 	return ResolverHandle(r.ResolverHandle, "FindByIDTopup", ctx, func(ctx context.Context) (*model.APIResponseTopup, error) {
 		id := int(input.TopupID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: topup ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: topup ID cannot be zero")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetCachedTopupCache(ctx, id)
@@ -310,10 +310,10 @@ func (r *queryResolver) FindMonthlyTopupStatusSuccess(ctx context.Context, input
 		month := int32(input.Month)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if month <= 0 || month > 12 {
-			return nil, errors.NewBadRequestError("invalid request: month must be between 1 and 12")
+			return nil, sharedErrors.NewBadRequestError("invalid request: month must be between 1 and 12")
 		}
 
 		reqStatus := &requests.MonthTopupStatus{
@@ -349,7 +349,7 @@ func (r *queryResolver) FindYearlyTopupStatusSuccess(ctx context.Context, input 
 	return ResolverHandle(r.ResolverHandle, "FindYearlyTopupStatusSuccess", ctx, func(ctx context.Context) (*model.APIResponseTopupYearStatusSuccess, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetYearlyTopupStatusSuccessCache(ctx, year)
@@ -379,10 +379,10 @@ func (r *queryResolver) FindMonthlyTopupStatusFailed(ctx context.Context, input 
 		month := int32(input.Month)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if month <= 0 || month > 12 {
-			return nil, errors.NewBadRequestError("invalid request: month must be between 1 and 12")
+			return nil, sharedErrors.NewBadRequestError("invalid request: month must be between 1 and 12")
 		}
 
 		reqStatus := &requests.MonthTopupStatus{
@@ -418,7 +418,7 @@ func (r *queryResolver) FindYearlyTopupStatusFailed(ctx context.Context, input m
 	return ResolverHandle(r.ResolverHandle, "FindYearlyTopupStatusFailed", ctx, func(ctx context.Context) (*model.APIResponseTopupYearStatusFailed, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetYearlyTopupStatusFailedCache(ctx, year)
@@ -449,13 +449,13 @@ func (r *queryResolver) FindMonthlyTopupStatusSuccessByCardNumber(ctx context.Co
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if month <= 0 || month > 12 {
-			return nil, errors.NewBadRequestError("invalid request: month must be between 1 and 12")
+			return nil, sharedErrors.NewBadRequestError("invalid request: month must be between 1 and 12")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetMonthTopupStatusSuccessByCardNumberCache(ctx, &input)
@@ -489,10 +489,10 @@ func (r *queryResolver) FindYearlyTopupStatusSuccessByCardNumber(ctx context.Con
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetYearlyTopupStatusSuccessByCardNumberCache(ctx, &input)
@@ -526,13 +526,13 @@ func (r *queryResolver) FindMonthlyTopupStatusFailedByCardNumber(ctx context.Con
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if month <= 0 || month > 12 {
-			return nil, errors.NewBadRequestError("invalid request: month must be between 1 and 12")
+			return nil, sharedErrors.NewBadRequestError("invalid request: month must be between 1 and 12")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetMonthTopupStatusFailedByCardNumberCache(ctx, &input)
@@ -566,10 +566,10 @@ func (r *queryResolver) FindYearlyTopupStatusFailedByCardNumber(ctx context.Cont
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetYearlyTopupStatusFailedByCardNumberCache(ctx, &input)
@@ -600,7 +600,7 @@ func (r *queryResolver) FindMonthlyTopupMethods(ctx context.Context, input model
 	return ResolverHandle(r.ResolverHandle, "FindMonthlyTopupMethods", ctx, func(ctx context.Context) (*model.APIResponseTopupMonthMethod, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetMonthlyTopupMethodsCache(ctx, year)
@@ -628,7 +628,7 @@ func (r *queryResolver) FindYearlyTopupMethods(ctx context.Context, input model.
 	return ResolverHandle(r.ResolverHandle, "FindYearlyTopupMethods", ctx, func(ctx context.Context) (*model.APIResponseTopupYearMethod, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetYearlyTopupMethodsCache(ctx, year)
@@ -656,7 +656,7 @@ func (r *queryResolver) FindMonthlyTopupAmounts(ctx context.Context, input model
 	return ResolverHandle(r.ResolverHandle, "FindMonthlyTopupAmounts", ctx, func(ctx context.Context) (*model.APIResponseTopupMonthAmount, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetMonthlyTopupAmountsCache(ctx, year)
@@ -684,7 +684,7 @@ func (r *queryResolver) FindYearlyTopupAmounts(ctx context.Context, input model.
 	return ResolverHandle(r.ResolverHandle, "FindYearlyTopupAmounts", ctx, func(ctx context.Context) (*model.APIResponseTopupYearAmount, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetYearlyTopupAmountsCache(ctx, year)
@@ -714,10 +714,10 @@ func (r *queryResolver) FindMonthlyTopupMethodsByCardNumber(ctx context.Context,
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetMonthlyTopupMethodsByCardNumberCache(ctx, &input)
@@ -750,10 +750,10 @@ func (r *queryResolver) FindYearlyTopupMethodsByCardNumber(ctx context.Context, 
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetYearlyTopupMethodsByCardNumberCache(ctx, &input)
@@ -786,10 +786,10 @@ func (r *queryResolver) FindMonthlyTopupAmountsByCardNumber(ctx context.Context,
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetMonthlyTopupAmountsByCardNumberCache(ctx, &input)
@@ -822,10 +822,10 @@ func (r *queryResolver) FindYearlyTopupAmountsByCardNumber(ctx context.Context, 
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.TopupGraphql.Cache.GetYearlyTopupAmountsByCardNumberCache(ctx, &input)
@@ -861,7 +861,7 @@ func (r *queryResolver) FindByCardNumberTopup(ctx context.Context, input model.F
 		}
 
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		reqService := &pb.FindByCardNumberTopupRequest{

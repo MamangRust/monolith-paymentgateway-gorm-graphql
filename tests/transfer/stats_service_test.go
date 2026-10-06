@@ -15,8 +15,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 
-	card_repo "github.com/MamangRust/monolith-payment-gateway-card/repository"
-	saldo_repo "github.com/MamangRust/monolith-payment-gateway-saldo/repository"
 	"gorm.io/gorm"
 )
 
@@ -24,6 +22,7 @@ type TransferStatsServiceTestSuite struct {
 	suite.Suite
 	gormDB      *gorm.DB
 	ts          *tests.TestSuite
+	deps        *tests.DependencyClients
 	svc         service.Service
 	userID      int32
 	cardNumber1 string
@@ -40,13 +39,6 @@ func (s *TransferStatsServiceTestSuite) SetupSuite() {
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
 	s.gormDB = gormDB
-	realSaldo := &realSaldoRepo{repo: saldo_repo.NewRepositories(gormDB)}
-	realCard := &realCardRepo{
-		query: card_repo.NewCardQueryRepository(gormDB),
-	}
-
-	repos := repository.NewRepositories(gormDB, realSaldo, realCard)
-
 	zapLog := zap.NewNop()
 	myLogger := &logger.Logger{Log: zapLog}
 
@@ -54,6 +46,22 @@ func (s *TransferStatsServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(redisOption)
 	cacheStore := cache.NewCacheStore(redisClient, myLogger, &dummyCacheMetrics{})
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, myLogger)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(
+		gormDB,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		deps.CardQuery,
+		deps.CardCommand,
+		repository.GuardOptions{
+			Saldo: tests.Guard("saldo", myLogger),
+			Card:  tests.Guard("card", myLogger),
+		},
+	)
 
 	s.svc = service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -87,6 +95,9 @@ func (s *TransferStatsServiceTestSuite) SetupSuite() {
 }
 
 func (s *TransferStatsServiceTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
 	s.ts.Teardown()
 }
 

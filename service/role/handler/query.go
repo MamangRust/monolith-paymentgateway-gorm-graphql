@@ -213,6 +213,27 @@ func (s *roleQueryHandleGrpc) FindByIdRole(ctx context.Context, req *pb.FindById
 	}, nil
 }
 
+func (s *roleQueryHandleGrpc) FindByName(ctx context.Context, req *pb.FindByNameRoleRequest) (*pb.ApiResponseRole, error) {
+	role, err := s.roleQuery.FindByName(ctx, req.GetName())
+
+	if err != nil {
+		return nil, errors.ToGrpcError(err)
+	}
+
+	protoRole := &pb.RoleResponse{
+		Id:        int32(role.RoleID),
+		Name:      role.RoleName,
+		CreatedAt: role.CreatedAt.Format("2006-01-02"),
+		UpdatedAt: role.UpdatedAt.Format("2006-01-02"),
+	}
+
+	return &pb.ApiResponseRole{
+		Status:  "success",
+		Message: "Successfully fetched role by name",
+		Data:    protoRole,
+	}, nil
+}
+
 func (s *roleQueryHandleGrpc) FindByUserId(ctx context.Context, req *pb.FindByIdUserRoleRequest) (*pb.ApiResponsesRole, error) {
 	userID := int(req.GetUserId())
 

@@ -25,7 +25,8 @@ type TransactionRepositoryTestSuite struct {
 	repo         repository.Repositories
 	cardRepo     *card_repo.Repositories
 	merchantRepo merchant_repo.Repositories
-	userRepo     user_repo.Repositories
+	userRepo     *user_repo.Repositories
+	userClient   *tests.UserClient
 	userID       int
 	merchantID   int
 }
@@ -39,13 +40,17 @@ func (s *TransactionRepositoryTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.Require().NoError(err)
 
-	s.userRepo = user_repo.NewRepositories(gormDB)
-	s.cardRepo = card_repo.NewRepositories(gormDB)
-	s.merchantRepo = merchant_repo.NewRepositories(gormDB)
-	s.repo = repository.NewRepositories(gormDB, nil, nil, nil)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	s.userRepo = user_repo.NewRepositories(&user_repo.Deps{Db: gormDB})
+	s.cardRepo = card_repo.NewRepositories(gormDB, userClient.Query, card_repo.GuardOptions{User: userClient.Guard()})
+	s.merchantRepo = merchant_repo.NewRepositories(gormDB, userClient.Query, merchant_repo.GuardOptions{User: userClient.Guard()})
+	s.repo = repository.NewRepositories(gormDB, nil, nil, nil, nil, nil)
 
 	// Create user
-	user, err := s.userRepo.UserCommand().CreateUser(context.Background(), &requests.CreateUserRequest{
+	user, err := s.userRepo.UserCommand.CreateUser(context.Background(), &requests.CreateUserRequest{
 		FirstName: "Transaction",
 		LastName:  "Tester",
 		Email:     fmt.Sprintf("transaction.tester-%d@example.com", time.Now().UnixNano()),
@@ -64,6 +69,9 @@ func (s *TransactionRepositoryTestSuite) SetupSuite() {
 }
 
 func (s *TransactionRepositoryTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

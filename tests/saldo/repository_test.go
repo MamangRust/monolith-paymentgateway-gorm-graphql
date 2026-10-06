@@ -19,12 +19,13 @@ import (
 
 type SaldoRepositoryTestSuite struct {
 	suite.Suite
-	gormDB   *gorm.DB
-	ts       *tests.TestSuite
-	repo     repository.Repositories
-	cardRepo *card_repo.Repositories
-	userRepo user_repo.Repositories
-	userID   int
+	gormDB     *gorm.DB
+	ts         *tests.TestSuite
+	repo       repository.Repositories
+	cardRepo   *card_repo.Repositories
+	userRepo   *user_repo.Repositories
+	userClient *tests.UserClient
+	userID     int
 }
 
 func (s *SaldoRepositoryTestSuite) SetupSuite() {
@@ -36,12 +37,16 @@ func (s *SaldoRepositoryTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.Require().NoError(err)
 
-	s.repo = repository.NewRepositories(gormDB)
-	s.cardRepo = card_repo.NewRepositories(gormDB)
-	s.userRepo = user_repo.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	s.repo = repository.NewRepositories(gormDB, nil, nil)
+	s.cardRepo = card_repo.NewRepositories(gormDB, userClient.Query, card_repo.GuardOptions{User: userClient.Guard()})
+	s.userRepo = user_repo.NewRepositories(&user_repo.Deps{Db: gormDB})
 
 	// Create user
-	user, err := s.userRepo.UserCommand().CreateUser(context.Background(), &requests.CreateUserRequest{
+	user, err := s.userRepo.UserCommand.CreateUser(context.Background(), &requests.CreateUserRequest{
 		FirstName: "Saldo",
 		LastName:  "Owner",
 		Email:     fmt.Sprintf("saldo.owner-%d@example.com", time.Now().UnixNano()),
@@ -52,6 +57,9 @@ func (s *SaldoRepositoryTestSuite) SetupSuite() {
 }
 
 func (s *SaldoRepositoryTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

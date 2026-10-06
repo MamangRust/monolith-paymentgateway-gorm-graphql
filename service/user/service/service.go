@@ -24,7 +24,7 @@ type service struct {
 // Deps represents the dependencies required by the Service struct.
 type Deps struct {
 	Cache        *cache.CacheStore
-	Repositories repository.Repositories
+	Repositories *repository.Repositories
 	Hash         hash.HashPassword
 	Logger       logger.LoggerInterface
 }
@@ -54,7 +54,7 @@ func newUserQueryService(
 	return NewUserQueryService(
 		&UserQueryDeps{
 			Cache:         cache,
-			Repository:    deps.Repositories.UserQuery(),
+			Repository:    deps.Repositories.UserQuery,
 			Logger:        deps.Logger,
 			Observability: obs,
 		},
@@ -69,9 +69,9 @@ func newUserCommandService(
 	return NewUserCommandService(
 		&UserCommandDeps{
 			Cache:                 cache,
-			UserQueryRepository:   deps.Repositories.UserQuery(),
-			UserCommandRepository: deps.Repositories.UserCommand(),
-			RoleRepository:        deps.Repositories.Role(),
+			UserQueryRepository:   deps.Repositories.UserQuery,
+			UserCommandRepository: deps.Repositories.UserCommand,
+			RoleRepository:        deps.Repositories.Role,
 			Logger:                deps.Logger,
 			Hashing:               deps.Hash,
 			Observability:         obs,

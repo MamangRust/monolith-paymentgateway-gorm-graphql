@@ -30,6 +30,8 @@ type AuthHandlerGapiTestSuite struct {
 	gormDB      *gorm.DB
 	ts          *tests.TestSuite
 	redisClient *redis.Client
+	roleSvc     *tests.InProcessRoleService
+	userClient  *tests.UserClient
 	client      pb.AuthServiceClient
 	conn        *grpc.ClientConn
 	grpcServer  *grpc.Server
@@ -50,13 +52,28 @@ func (s *AuthHandlerGapiTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.gormDB = gormDB
 
-	repos := repository.NewRepositories(gormDB)
-
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
 	log, _ := logger.NewLogger("test", lp)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(s.redisClient, log, cacheMetrics)
+
+	roleSvc, err := tests.StartInProcessRoleService(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.roleSvc = roleSvc
+
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	repos := repository.NewRepositories(&repository.Deps{
+		Db:                gormDB,
+		UserQueryClient:   userClient.Query,
+		UserCommandClient: userClient.Command,
+		RoleQueryClient:   roleSvc.Role,
+		RoleCommandClient: roleSvc.RoleCommand,
+		UserRoleClient:    roleSvc.UserRole,
+	})
 
 	tokenManager, _ := auth.NewManager("mysecret")
 	hasher := hash.NewHashingPassword()
@@ -101,10 +118,24 @@ func (s *AuthHandlerGapiTestSuite) TearDownSuite() {
 	if s.grpcServer != nil {
 		s.grpcServer.Stop()
 	}
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
+	if s.roleSvc != nil {
+		s.roleSvc.Close()
+	}
 	if s.redisClient != nil {
 		s.redisClient.Close()
 	}
 	s.ts.Teardown()
+}
+
+// verifyUser marks a registered user as verified. Register always creates the
+// account with is_verified = false, while Login only looks up verified accounts.
+func (s *AuthHandlerGapiTestSuite) verifyUser(email string) {
+	err := s.gormDB.WithContext(context.Background()).
+		Exec("UPDATE users SET is_verified = true WHERE email = ?", email).Error
+	s.Require().NoError(err)
 }
 
 func (s *AuthHandlerGapiTestSuite) Test1_Register() {
@@ -122,6 +153,8 @@ func (s *AuthHandlerGapiTestSuite) Test1_Register() {
 	s.NotNil(res)
 	s.Equal("success", res.Status)
 	s.Equal(s.email, res.Data.Email)
+
+	s.verifyUser(s.email)
 }
 
 func (s *AuthHandlerGapiTestSuite) Test2_Login() {
@@ -154,6 +187,7 @@ func (s *AuthHandlerGapiTestSuite) Test4_LoginLockout() {
 	}
 	_, err := s.client.RegisterUser(ctx, regReq)
 	s.NoError(err)
+	s.verifyUser(email)
 
 	loginReq := &pb.LoginRequest{
 		Email:    email,

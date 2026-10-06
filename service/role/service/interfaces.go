@@ -13,6 +13,7 @@ type RoleQueryService interface {
 	FindByActiveRole(ctx context.Context, req *requests.FindAllRoles) ([]*models.RoleActiveRow, *int, error)
 	FindByTrashedRole(ctx context.Context, req *requests.FindAllRoles) ([]*models.RoleTrashedRow, *int, error)
 	FindById(ctx context.Context, role_id int) (*models.Role, error)
+	FindByName(ctx context.Context, name string) (*models.Role, error)
 	FindByUserId(ctx context.Context, id int) ([]*models.Role, error)
 }
 
@@ -26,4 +27,9 @@ type RoleCommandService interface {
 
 	RestoreAllRole(ctx context.Context) (bool, error)
 	DeleteAllRolePermanent(ctx context.Context) (bool, error)
+
+	// AssignRoleToUser / RemoveRoleFromUser back the UserRoleService, which is
+	// served piggybacked on the role gRPC server.
+	AssignRoleToUser(ctx context.Context, request *requests.CreateUserRoleRequest) (*models.UserRole, error)
+	RemoveRoleFromUser(ctx context.Context, request *requests.RemoveUserRoleRequest) error
 }

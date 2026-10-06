@@ -111,11 +111,41 @@ func (r *userQueryRepository) FindByTrashed(ctx context.Context, req *requests.F
 	return results, nil
 }
 
-func (r *userQueryRepository) FindByEmail(ctx context.Context, email string) (*models.UserByEmailRow, error) {
-	var result models.UserByEmailRow
+func (r *userQueryRepository) FindByEmail(ctx context.Context, email string) (*models.UserByEmailWithPasswordRow, error) {
+	var result models.UserByEmailWithPasswordRow
 	if err := r.db.WithContext(ctx).Table("users").
-		Select("user_id, email").
+		Select("user_id, email, password").
 		Where("email = ? AND deleted_at IS NULL", email).
+		First(&result).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, user_errors.ErrUserNotFound.WithInternal(err)
+		}
+		return nil, sharedErrors.ErrInternal.WithInternal(err)
+	}
+
+	return &result, nil
+}
+
+func (r *userQueryRepository) FindByEmailAndVerify(ctx context.Context, email string) (*models.UserByEmailWithPasswordRow, error) {
+	var result models.UserByEmailWithPasswordRow
+	if err := r.db.WithContext(ctx).Table("users").
+		Select("user_id, firstname, lastname, email, password, created_at, updated_at").
+		Where("email = ? AND is_verified = true AND deleted_at IS NULL", email).
+		First(&result).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, user_errors.ErrUserNotFound.WithInternal(err)
+		}
+		return nil, sharedErrors.ErrInternal.WithInternal(err)
+	}
+
+	return &result, nil
+}
+
+func (r *userQueryRepository) FindByVerificationCode(ctx context.Context, verificationCode string) (*models.UserByVerificationCodeRow, error) {
+	var result models.UserByVerificationCodeRow
+	if err := r.db.WithContext(ctx).Table("users").
+		Select("user_id, firstname, lastname, email, password, created_at, updated_at").
+		Where("verification_code = ? AND deleted_at IS NULL", verificationCode).
 		First(&result).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, user_errors.ErrUserNotFound.WithInternal(err)

@@ -26,6 +26,7 @@ type WithdrawServiceTestSuite struct {
 	suite.Suite
 	gormDB          *gorm.DB
 	ts              *tests.TestSuite
+	deps            *tests.DependencyClients
 	withdrawService service.Service
 	withdrawID      int
 	cardNumber      string
@@ -43,15 +44,28 @@ func (s *WithdrawServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	cardRepo := &realCardRepo{query: card_repo_impl.NewCardQueryRepository(gormDB)}
-	saldoRepo := &realSaldoRepo{repo: saldo_repo_impl.NewRepositories(gormDB)}
-	repos := repository.NewRepositories(gormDB, cardRepo, saldoRepo)
-
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
 	log, _ := logger.NewLogger("test", lp)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(redisClient, log, cacheMetrics)
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(
+		gormDB,
+		deps.CardQuery,
+		deps.CardCommand,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		0,
+		repository.GuardOptions{
+			Card:  tests.Guard("card", log),
+			Saldo: tests.Guard("saldo", log),
+		},
+	)
 
 	s.withdrawService = service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -93,6 +107,9 @@ func (s *WithdrawServiceTestSuite) SetupSuite() {
 }
 
 func (s *WithdrawServiceTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
 	s.ts.Teardown()
 }
 

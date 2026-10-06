@@ -13,6 +13,7 @@ import (
 	"github.com/MamangRust/monolith-payment-gateway-pkg/adapter"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/kafka"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/outbox"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/resilience"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/server"
 	"github.com/MamangRust/monolith-payment-gateway-transfer/handler"
 	transferstatshandler "github.com/MamangRust/monolith-payment-gateway-transfer/handler/stats"
@@ -62,10 +63,21 @@ func NewServer(cfg *server.Config) (*server.GRPCServer, error) {
 	cardClientQuery := pbcard.NewCardQueryServiceClient(connCard)
 	cardClientCmd := pbcard.NewCardCommandServiceClient(connCard)
 
-	saldoAdapter := adapter.NewSaldoAdapter(saldoClientQuery, saldoClientCmd)
-	cardAdapter := adapter.NewCardAdapter(cardClientQuery, cardClientCmd)
-
-	repos := repository.NewRepositories(srv.GormDB, saldoAdapter, cardAdapter)
+	repos := repository.NewRepositories(
+		srv.GormDB,
+		saldoClientQuery,
+		saldoClientCmd,
+		cardClientQuery,
+		cardClientCmd,
+		repository.GuardOptions{
+			Saldo: []adapter.GuardOption{
+				adapter.WithDependencyGuard(resilience.NewDependencyGuard("saldo", 5, 30, 100, 3*time.Second, srv.Logger)),
+			},
+			Card: []adapter.GuardOption{
+				adapter.WithDependencyGuard(resilience.NewDependencyGuard("card", 5, 30, 100, 3*time.Second, srv.Logger)),
+			},
+		},
+	)
 	myKafka := kafka.NewKafka(srv.Logger, []string{viper.GetString("KAFKA_BROKERS")})
 	srv.AddCleanupHook(myKafka.Close)
 	relay, relayErr := outbox.NewRelay(srv.GormDB, myKafka, outbox.RelayConfig{})

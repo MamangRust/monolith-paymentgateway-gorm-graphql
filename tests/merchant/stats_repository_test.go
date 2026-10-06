@@ -106,11 +106,11 @@ func (s *MerchantStatsRepositoryTestSuite) TestMerchantStats() {
 	s.Equal(int32(500), res1[0].TotalAmount)
 	s.Equal(int32(300), res1[1].TotalAmount)
 
-	// Merchant 2 Monthly
+	// Merchant 2 Monthly (only has a January transaction, so a single row is returned)
 	res2, err := s.merchantRepo.GetMonthlyAmountByMerchants(ctx, &requests.MonthYearAmountMerchant{Year: s.testYear, MerchantID: int(s.merchantID2)})
 	s.NoError(err)
+	s.Len(res2, 1)
 	s.Equal(int32(1000), res2[0].TotalAmount)
-	s.Equal(int32(0), res2[1].TotalAmount)
 }
 
 func (s *MerchantStatsRepositoryTestSuite) TestApiKeyStats() {

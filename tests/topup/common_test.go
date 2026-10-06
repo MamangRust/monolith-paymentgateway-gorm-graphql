@@ -2,40 +2,11 @@ package topup_test
 
 import (
 	"context"
-	card_repo "github.com/MamangRust/monolith-payment-gateway-card/repository"
-	models "github.com/MamangRust/monolith-payment-gateway-pkg/database/models"
-	saldo_repo "github.com/MamangRust/monolith-payment-gateway-saldo/repository"
-	"github.com/MamangRust/monolith-payment-gateway-shared/domain/requests"
 	"time"
 )
 
-type realCardRepo struct {
-	query card_repo.CardQueryRepository
-	cmd   card_repo.CardCommandRepository
-}
-
-func (r *realCardRepo) FindUserCardByCardNumber(ctx context.Context, card_number string) (*models.CardByEmailRow, error) {
-	return r.query.FindUserCardByCardNumber(ctx, card_number)
-}
-func (r *realCardRepo) FindCardByCardNumber(ctx context.Context, card_number string) (*models.CardAllFieldsRow, error) {
-	return r.query.FindCardByCardNumber(ctx, card_number)
-}
-func (r *realCardRepo) UpdateCard(ctx context.Context, request *requests.UpdateCardRequest) (*models.CardUpdateRow, error) {
-	return r.cmd.UpdateCard(ctx, request)
-}
-
-type realSaldoRepo struct {
-	repo saldo_repo.Repositories
-}
-
-func (r *realSaldoRepo) FindByCardNumber(ctx context.Context, card_number string) (*models.Saldo, error) {
-	return r.repo.FindByCardNumber(ctx, card_number)
-}
-func (r *realSaldoRepo) UpdateSaldoBalance(ctx context.Context, request *requests.UpdateSaldoBalance) (*models.UpdateSaldoBalanceRow, error) {
-	return r.repo.UpdateSaldoBalance(ctx, request)
-}
-
-// Dummy cache metrics
+// dummyCacheMetrics is a no-op observability.CacheMetricsInterface used by the
+// stats suites that build a cache store without a metrics backend.
 type dummyCacheMetrics struct{}
 
 func (d *dummyCacheMetrics) RecordCacheHit(ctx context.Context, key string)                  {}

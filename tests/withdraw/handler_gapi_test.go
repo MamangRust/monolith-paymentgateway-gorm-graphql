@@ -31,6 +31,7 @@ type WithdrawGapiTestSuite struct {
 	suite.Suite
 	gormDB        *gorm.DB
 	ts            *tests.TestSuite
+	deps          *tests.DependencyClients
 	redisClient   *redis.Client
 	grpcServer    *grpc.Server
 	commandClient pb.WithdrawCommandServiceClient
@@ -40,6 +41,7 @@ type WithdrawGapiTestSuite struct {
 	userRepo      user_repo.UserCommandRepository
 	cardRepo      card_repo.CardCommandRepository
 	saldoRepo     saldo_repo.Repositories
+	userClient    *tests.UserClient
 
 	cardNumber string
 	withdrawID int32
@@ -56,22 +58,42 @@ func (s *WithdrawGapiTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.redisClient = redis.NewClient(opts)
 
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
 	// Repositories for seeding and service dependencies
 	userRepos := user_repo.NewUserCommandRepository(gormDB)
-	cardRepos := card_repo.NewRepositories(gormDB)
-	saldoRepos := saldo_repo.NewRepositories(gormDB)
+	cardRepos := card_repo.NewRepositories(gormDB, userClient.Query, card_repo.GuardOptions{User: userClient.Guard()})
 
 	s.userRepo = userRepos
 	s.cardRepo = cardRepos.CardCommand
-	s.saldoRepo = saldoRepos
-
-	s.repos = repository.NewRepositories(gormDB, cardRepos.CardQuery, saldoRepos)
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
 	log, _ := logger.NewLogger("test", lp)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(s.redisClient, log, cacheMetrics)
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	saldoRepos := saldo_repo.NewRepositories(gormDB, deps.CardQuery, deps.CardCommand)
+	s.saldoRepo = saldoRepos
+
+	s.repos = repository.NewRepositories(
+		gormDB,
+		deps.CardQuery,
+		deps.CardCommand,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		0,
+		repository.GuardOptions{
+			Card:  tests.Guard("card", log),
+			Saldo: tests.Guard("saldo", log),
+		},
+	)
 
 	withdrawService := service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -116,6 +138,12 @@ func (s *WithdrawGapiTestSuite) TearDownSuite() {
 	}
 	if s.grpcServer != nil {
 		s.grpcServer.Stop()
+	}
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
+	if s.deps != nil {
+		s.deps.Close()
 	}
 	if s.redisClient != nil {
 		s.redisClient.Close()

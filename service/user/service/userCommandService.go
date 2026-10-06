@@ -118,6 +118,92 @@ func (s *userCommandService) CreateUser(ctx context.Context, request *requests.C
 	return res, nil
 }
 
+func (s *userCommandService) CreateUserFromRegister(ctx context.Context, request *requests.RegisterRequest) (*models.CreateUserRow, error) {
+	const method = "CreateUserFromRegister"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method,
+		attribute.String("email", request.Email))
+
+	defer func() {
+		end(status)
+	}()
+
+	res, err := s.userCommandRepository.CreateUserFromRegister(ctx, request)
+	if err != nil {
+		status = "error"
+		return errorhandler.HandleError[*models.CreateUserRow](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.String("email", request.Email),
+		)
+	}
+
+	s.cache.DeleteUserListCache(ctx)
+	logSuccess("Successfully created user from register", zap.String("email", res.Email), zap.Int("user_id", int(res.UserID)))
+
+	return res, nil
+}
+
+func (s *userCommandService) UpdateUserIsVerified(ctx context.Context, userID int, isVerified bool) (*models.UserIsVerifiedRow, error) {
+	const method = "UpdateUserIsVerified"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method,
+		attribute.Int("user_id", userID))
+
+	defer func() {
+		end(status)
+	}()
+
+	res, err := s.userCommandRepository.UpdateUserIsVerified(ctx, userID, isVerified)
+	if err != nil {
+		status = "error"
+		return errorhandler.HandleError[*models.UserIsVerifiedRow](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.Int("user_id", userID),
+		)
+	}
+
+	s.cache.DeleteUserCache(ctx, userID)
+	s.cache.DeleteUserListCache(ctx)
+	logSuccess("Successfully updated user verification", zap.Int("user_id", userID))
+
+	return res, nil
+}
+
+func (s *userCommandService) UpdateUserPassword(ctx context.Context, userID int, password string) (*models.UserPasswordRow, error) {
+	const method = "UpdateUserPassword"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method,
+		attribute.Int("user_id", userID))
+
+	defer func() {
+		end(status)
+	}()
+
+	res, err := s.userCommandRepository.UpdateUserPassword(ctx, userID, password)
+	if err != nil {
+		status = "error"
+		return errorhandler.HandleError[*models.UserPasswordRow](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.Int("user_id", userID),
+		)
+	}
+
+	s.cache.DeleteUserCache(ctx, userID)
+	s.cache.DeleteUserListCache(ctx)
+	logSuccess("Successfully updated user password", zap.Int("user_id", userID))
+
+	return res, nil
+}
+
 func (s *userCommandService) UpdateUser(ctx context.Context, request *requests.UpdateUserRequest) (*models.UpdateUserRow, error) {
 	const method = "UpdateUser"
 

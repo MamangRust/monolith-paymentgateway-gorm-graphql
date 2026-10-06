@@ -98,6 +98,194 @@ func (x *CreateUserRequest) GetConfirmPassword() string {
 	return ""
 }
 
+type RegisterUserRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Firstname        string                 `protobuf:"bytes,1,opt,name=firstname,proto3" json:"firstname,omitempty"`
+	Lastname         string                 `protobuf:"bytes,2,opt,name=lastname,proto3" json:"lastname,omitempty"`
+	Email            string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	Password         string                 `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
+	VerificationCode string                 `protobuf:"bytes,5,opt,name=verification_code,json=verificationCode,proto3" json:"verification_code,omitempty"`
+	IsVerified       bool                   `protobuf:"varint,6,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *RegisterUserRequest) Reset() {
+	*x = RegisterUserRequest{}
+	mi := &file_user_user_command_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterUserRequest) ProtoMessage() {}
+
+func (x *RegisterUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_command_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterUserRequest.ProtoReflect.Descriptor instead.
+func (*RegisterUserRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_command_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *RegisterUserRequest) GetFirstname() string {
+	if x != nil {
+		return x.Firstname
+	}
+	return ""
+}
+
+func (x *RegisterUserRequest) GetLastname() string {
+	if x != nil {
+		return x.Lastname
+	}
+	return ""
+}
+
+func (x *RegisterUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *RegisterUserRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *RegisterUserRequest) GetVerificationCode() string {
+	if x != nil {
+		return x.VerificationCode
+	}
+	return ""
+}
+
+func (x *RegisterUserRequest) GetIsVerified() bool {
+	if x != nil {
+		return x.IsVerified
+	}
+	return false
+}
+
+type UpdateUserIsVerifiedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int32                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	IsVerified    bool                   `protobuf:"varint,2,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserIsVerifiedRequest) Reset() {
+	*x = UpdateUserIsVerifiedRequest{}
+	mi := &file_user_user_command_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserIsVerifiedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserIsVerifiedRequest) ProtoMessage() {}
+
+func (x *UpdateUserIsVerifiedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_command_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserIsVerifiedRequest.ProtoReflect.Descriptor instead.
+func (*UpdateUserIsVerifiedRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_command_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *UpdateUserIsVerifiedRequest) GetUserId() int32 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *UpdateUserIsVerifiedRequest) GetIsVerified() bool {
+	if x != nil {
+		return x.IsVerified
+	}
+	return false
+}
+
+type UpdateUserPasswordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int32                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserPasswordRequest) Reset() {
+	*x = UpdateUserPasswordRequest{}
+	mi := &file_user_user_command_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserPasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserPasswordRequest) ProtoMessage() {}
+
+func (x *UpdateUserPasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_command_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserPasswordRequest.ProtoReflect.Descriptor instead.
+func (*UpdateUserPasswordRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_command_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *UpdateUserPasswordRequest) GetUserId() int32 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *UpdateUserPasswordRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
 type UpdateUserRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Id              int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -112,7 +300,7 @@ type UpdateUserRequest struct {
 
 func (x *UpdateUserRequest) Reset() {
 	*x = UpdateUserRequest{}
-	mi := &file_user_user_command_proto_msgTypes[1]
+	mi := &file_user_user_command_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -124,7 +312,7 @@ func (x *UpdateUserRequest) String() string {
 func (*UpdateUserRequest) ProtoMessage() {}
 
 func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_command_proto_msgTypes[1]
+	mi := &file_user_user_command_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -137,7 +325,7 @@ func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_command_proto_rawDescGZIP(), []int{1}
+	return file_user_user_command_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *UpdateUserRequest) GetId() int32 {
@@ -192,7 +380,7 @@ type ApiResponseUserDelete struct {
 
 func (x *ApiResponseUserDelete) Reset() {
 	*x = ApiResponseUserDelete{}
-	mi := &file_user_user_command_proto_msgTypes[2]
+	mi := &file_user_user_command_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -204,7 +392,7 @@ func (x *ApiResponseUserDelete) String() string {
 func (*ApiResponseUserDelete) ProtoMessage() {}
 
 func (x *ApiResponseUserDelete) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_command_proto_msgTypes[2]
+	mi := &file_user_user_command_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -217,7 +405,7 @@ func (x *ApiResponseUserDelete) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApiResponseUserDelete.ProtoReflect.Descriptor instead.
 func (*ApiResponseUserDelete) Descriptor() ([]byte, []int) {
-	return file_user_user_command_proto_rawDescGZIP(), []int{2}
+	return file_user_user_command_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ApiResponseUserDelete) GetStatus() string {
@@ -244,7 +432,7 @@ type ApiResponseUserAll struct {
 
 func (x *ApiResponseUserAll) Reset() {
 	*x = ApiResponseUserAll{}
-	mi := &file_user_user_command_proto_msgTypes[3]
+	mi := &file_user_user_command_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -256,7 +444,7 @@ func (x *ApiResponseUserAll) String() string {
 func (*ApiResponseUserAll) ProtoMessage() {}
 
 func (x *ApiResponseUserAll) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_command_proto_msgTypes[3]
+	mi := &file_user_user_command_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -269,7 +457,7 @@ func (x *ApiResponseUserAll) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApiResponseUserAll.ProtoReflect.Descriptor instead.
 func (*ApiResponseUserAll) Descriptor() ([]byte, []int) {
-	return file_user_user_command_proto_rawDescGZIP(), []int{3}
+	return file_user_user_command_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ApiResponseUserAll) GetStatus() string {
@@ -296,7 +484,22 @@ const file_user_user_command_proto_rawDesc = "" +
 	"\blastname\x18\x02 \x01(\tR\blastname\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x04 \x01(\tR\bpassword\x12)\n" +
-	"\x10confirm_password\x18\x05 \x01(\tR\x0fconfirmPassword\"\xba\x01\n" +
+	"\x10confirm_password\x18\x05 \x01(\tR\x0fconfirmPassword\"\xcf\x01\n" +
+	"\x13RegisterUserRequest\x12\x1c\n" +
+	"\tfirstname\x18\x01 \x01(\tR\tfirstname\x12\x1a\n" +
+	"\blastname\x18\x02 \x01(\tR\blastname\x12\x14\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1a\n" +
+	"\bpassword\x18\x04 \x01(\tR\bpassword\x12+\n" +
+	"\x11verification_code\x18\x05 \x01(\tR\x10verificationCode\x12\x1f\n" +
+	"\vis_verified\x18\x06 \x01(\bR\n" +
+	"isVerified\"W\n" +
+	"\x1bUpdateUserIsVerifiedRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x05R\x06userId\x12\x1f\n" +
+	"\vis_verified\x18\x02 \x01(\bR\n" +
+	"isVerified\"P\n" +
+	"\x19UpdateUserPasswordRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x05R\x06userId\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xba\x01\n" +
 	"\x11UpdateUserRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1c\n" +
 	"\tfirstname\x18\x02 \x01(\tR\tfirstname\x12\x1a\n" +
@@ -309,13 +512,17 @@ const file_user_user_command_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"F\n" +
 	"\x12ApiResponseUserAll\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage2\xa1\x04\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\x93\x06\n" +
 	"\x12UserCommandService\x12>\n" +
 	"\x06Create\x12\x1a.pb.user.CreateUserRequest\x1a\x18.pb.user.ApiResponseUser\x12>\n" +
 	"\x06Update\x12\x1a.pb.user.UpdateUserRequest\x1a\x18.pb.user.ApiResponseUser\x12M\n" +
 	"\vTrashedUser\x12\x1c.pb.user.FindByIdUserRequest\x1a .pb.user.ApiResponseUserDeleteAt\x12M\n" +
 	"\vRestoreUser\x12\x1c.pb.user.FindByIdUserRequest\x1a .pb.user.ApiResponseUserDeleteAt\x12S\n" +
-	"\x13DeleteUserPermanent\x12\x1c.pb.user.FindByIdUserRequest\x1a\x1e.pb.user.ApiResponseUserDelete\x12G\n" +
+	"\x13DeleteUserPermanent\x12\x1c.pb.user.FindByIdUserRequest\x1a\x1e.pb.user.ApiResponseUserDelete\x12D\n" +
+	"\n" +
+	"CreateUser\x12\x1c.pb.user.RegisterUserRequest\x1a\x18.pb.user.ApiResponseUser\x12V\n" +
+	"\x14UpdateUserIsVerified\x12$.pb.user.UpdateUserIsVerifiedRequest\x1a\x18.pb.user.ApiResponseUser\x12R\n" +
+	"\x12UpdateUserPassword\x12\".pb.user.UpdateUserPasswordRequest\x1a\x18.pb.user.ApiResponseUser\x12G\n" +
 	"\x0eRestoreAllUser\x12\x16.google.protobuf.Empty\x1a\x1b.pb.user.ApiResponseUserAll\"\x00\x12O\n" +
 	"\x16DeleteAllUserPermanent\x12\x16.google.protobuf.Empty\x1a\x1b.pb.user.ApiResponseUserAll\"\x00B8Z6github.com/MamangRust/monolith-payment-gateway-pb/userb\x06proto3"
 
@@ -331,37 +538,46 @@ func file_user_user_command_proto_rawDescGZIP() []byte {
 	return file_user_user_command_proto_rawDescData
 }
 
-var file_user_user_command_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_user_user_command_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_user_user_command_proto_goTypes = []any{
-	(*CreateUserRequest)(nil),       // 0: pb.user.CreateUserRequest
-	(*UpdateUserRequest)(nil),       // 1: pb.user.UpdateUserRequest
-	(*ApiResponseUserDelete)(nil),   // 2: pb.user.ApiResponseUserDelete
-	(*ApiResponseUserAll)(nil),      // 3: pb.user.ApiResponseUserAll
-	(*FindByIdUserRequest)(nil),     // 4: pb.user.FindByIdUserRequest
-	(*emptypb.Empty)(nil),           // 5: google.protobuf.Empty
-	(*ApiResponseUser)(nil),         // 6: pb.user.ApiResponseUser
-	(*ApiResponseUserDeleteAt)(nil), // 7: pb.user.ApiResponseUserDeleteAt
+	(*CreateUserRequest)(nil),           // 0: pb.user.CreateUserRequest
+	(*RegisterUserRequest)(nil),         // 1: pb.user.RegisterUserRequest
+	(*UpdateUserIsVerifiedRequest)(nil), // 2: pb.user.UpdateUserIsVerifiedRequest
+	(*UpdateUserPasswordRequest)(nil),   // 3: pb.user.UpdateUserPasswordRequest
+	(*UpdateUserRequest)(nil),           // 4: pb.user.UpdateUserRequest
+	(*ApiResponseUserDelete)(nil),       // 5: pb.user.ApiResponseUserDelete
+	(*ApiResponseUserAll)(nil),          // 6: pb.user.ApiResponseUserAll
+	(*FindByIdUserRequest)(nil),         // 7: pb.user.FindByIdUserRequest
+	(*emptypb.Empty)(nil),               // 8: google.protobuf.Empty
+	(*ApiResponseUser)(nil),             // 9: pb.user.ApiResponseUser
+	(*ApiResponseUserDeleteAt)(nil),     // 10: pb.user.ApiResponseUserDeleteAt
 }
 var file_user_user_command_proto_depIdxs = []int32{
-	0, // 0: pb.user.UserCommandService.Create:input_type -> pb.user.CreateUserRequest
-	1, // 1: pb.user.UserCommandService.Update:input_type -> pb.user.UpdateUserRequest
-	4, // 2: pb.user.UserCommandService.TrashedUser:input_type -> pb.user.FindByIdUserRequest
-	4, // 3: pb.user.UserCommandService.RestoreUser:input_type -> pb.user.FindByIdUserRequest
-	4, // 4: pb.user.UserCommandService.DeleteUserPermanent:input_type -> pb.user.FindByIdUserRequest
-	5, // 5: pb.user.UserCommandService.RestoreAllUser:input_type -> google.protobuf.Empty
-	5, // 6: pb.user.UserCommandService.DeleteAllUserPermanent:input_type -> google.protobuf.Empty
-	6, // 7: pb.user.UserCommandService.Create:output_type -> pb.user.ApiResponseUser
-	6, // 8: pb.user.UserCommandService.Update:output_type -> pb.user.ApiResponseUser
-	7, // 9: pb.user.UserCommandService.TrashedUser:output_type -> pb.user.ApiResponseUserDeleteAt
-	7, // 10: pb.user.UserCommandService.RestoreUser:output_type -> pb.user.ApiResponseUserDeleteAt
-	2, // 11: pb.user.UserCommandService.DeleteUserPermanent:output_type -> pb.user.ApiResponseUserDelete
-	3, // 12: pb.user.UserCommandService.RestoreAllUser:output_type -> pb.user.ApiResponseUserAll
-	3, // 13: pb.user.UserCommandService.DeleteAllUserPermanent:output_type -> pb.user.ApiResponseUserAll
-	7, // [7:14] is the sub-list for method output_type
-	0, // [0:7] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0,  // 0: pb.user.UserCommandService.Create:input_type -> pb.user.CreateUserRequest
+	4,  // 1: pb.user.UserCommandService.Update:input_type -> pb.user.UpdateUserRequest
+	7,  // 2: pb.user.UserCommandService.TrashedUser:input_type -> pb.user.FindByIdUserRequest
+	7,  // 3: pb.user.UserCommandService.RestoreUser:input_type -> pb.user.FindByIdUserRequest
+	7,  // 4: pb.user.UserCommandService.DeleteUserPermanent:input_type -> pb.user.FindByIdUserRequest
+	1,  // 5: pb.user.UserCommandService.CreateUser:input_type -> pb.user.RegisterUserRequest
+	2,  // 6: pb.user.UserCommandService.UpdateUserIsVerified:input_type -> pb.user.UpdateUserIsVerifiedRequest
+	3,  // 7: pb.user.UserCommandService.UpdateUserPassword:input_type -> pb.user.UpdateUserPasswordRequest
+	8,  // 8: pb.user.UserCommandService.RestoreAllUser:input_type -> google.protobuf.Empty
+	8,  // 9: pb.user.UserCommandService.DeleteAllUserPermanent:input_type -> google.protobuf.Empty
+	9,  // 10: pb.user.UserCommandService.Create:output_type -> pb.user.ApiResponseUser
+	9,  // 11: pb.user.UserCommandService.Update:output_type -> pb.user.ApiResponseUser
+	10, // 12: pb.user.UserCommandService.TrashedUser:output_type -> pb.user.ApiResponseUserDeleteAt
+	10, // 13: pb.user.UserCommandService.RestoreUser:output_type -> pb.user.ApiResponseUserDeleteAt
+	5,  // 14: pb.user.UserCommandService.DeleteUserPermanent:output_type -> pb.user.ApiResponseUserDelete
+	9,  // 15: pb.user.UserCommandService.CreateUser:output_type -> pb.user.ApiResponseUser
+	9,  // 16: pb.user.UserCommandService.UpdateUserIsVerified:output_type -> pb.user.ApiResponseUser
+	9,  // 17: pb.user.UserCommandService.UpdateUserPassword:output_type -> pb.user.ApiResponseUser
+	6,  // 18: pb.user.UserCommandService.RestoreAllUser:output_type -> pb.user.ApiResponseUserAll
+	6,  // 19: pb.user.UserCommandService.DeleteAllUserPermanent:output_type -> pb.user.ApiResponseUserAll
+	10, // [10:20] is the sub-list for method output_type
+	0,  // [0:10] is the sub-list for method input_type
+	0,  // [0:0] is the sub-list for extension type_name
+	0,  // [0:0] is the sub-list for extension extendee
+	0,  // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_user_user_command_proto_init() }
@@ -376,7 +592,7 @@ func file_user_user_command_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_user_command_proto_rawDesc), len(file_user_user_command_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

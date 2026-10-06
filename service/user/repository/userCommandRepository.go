@@ -48,6 +48,71 @@ func (r *userCommandRepository) CreateUser(ctx context.Context, request *request
 	}, nil
 }
 
+// CreateUserFromRegister persists a user from the auth register flow, carrying
+// the verification code and is_verified flag supplied by the caller.
+func (r *userCommandRepository) CreateUserFromRegister(ctx context.Context, request *requests.RegisterRequest) (*models.CreateUserRow, error) {
+	isVerified := request.IsVerified
+
+	user := &models.User{
+		Firstname:        request.FirstName,
+		Lastname:         request.LastName,
+		Email:            request.Email,
+		Password:         request.Password,
+		VerificationCode: request.VerifiedCode,
+		IsVerified:       &isVerified,
+	}
+
+	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
+		return nil, sharedErrors.ErrConstraintOrFailed(err, "User", "create user")
+	}
+
+	return &models.CreateUserRow{
+		UserID:    user.UserID,
+		Firstname: user.Firstname,
+		Lastname:  user.Lastname,
+		Email:     user.Email,
+		Password:  user.Password,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
+}
+
+func (r *userCommandRepository) UpdateUserIsVerified(ctx context.Context, user_id int, is_verified bool) (*models.UserIsVerifiedRow, error) {
+	result := r.db.WithContext(ctx).Model(&models.User{}).
+		Where("user_id = ? AND deleted_at IS NULL", user_id).
+		Update("is_verified", is_verified)
+	if result.Error != nil {
+		return nil, sharedErrors.ErrNoRowsOrFailed(result.Error, "User", "update user verification")
+	}
+
+	var user models.UserIsVerifiedRow
+	if err := r.db.WithContext(ctx).Table("users").
+		Select("user_id, firstname, lastname, email, password, created_at, updated_at").
+		Where("user_id = ? AND deleted_at IS NULL", user_id).First(&user).Error; err != nil {
+		return nil, sharedErrors.ErrNoRowsOrFailed(err, "User", "update user verification")
+	}
+
+	return &user, nil
+}
+
+func (r *userCommandRepository) UpdateUserPassword(ctx context.Context, user_id int, password string) (*models.UserPasswordRow, error) {
+	result := r.db.WithContext(ctx).Model(&models.User{}).
+		Where("user_id = ? AND deleted_at IS NULL", user_id).
+		Update("password", password)
+	if result.Error != nil {
+		return nil, sharedErrors.ErrNoRowsOrFailed(result.Error, "User", "update user password")
+	}
+
+	var user models.UserPasswordRow
+	if err := r.db.WithContext(ctx).Table("users").
+		Select("user_id, firstname, lastname, email, password, created_at, updated_at").
+		Where("user_id = ? AND deleted_at IS NULL", user_id).First(&user).Error; err != nil {
+		return nil, sharedErrors.ErrNoRowsOrFailed(err, "User", "update user password")
+	}
+
+	return &user, nil
+}
+
 func (r *userCommandRepository) UpdateUser(ctx context.Context, request *requests.UpdateUserRequest) (*models.UpdateUserRow, error) {
 	var user models.User
 	if err := r.db.WithContext(ctx).

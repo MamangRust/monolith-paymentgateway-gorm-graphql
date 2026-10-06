@@ -7,24 +7,31 @@ import (
 	"time"
 
 	card_repo "github.com/MamangRust/monolith-payment-gateway-card/repository"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
+	"github.com/MamangRust/monolith-payment-gateway-shared/cache"
 	"github.com/MamangRust/monolith-payment-gateway-shared/domain/requests"
+	"github.com/MamangRust/monolith-payment-gateway-shared/observability"
 	tests "github.com/MamangRust/monolith-payment-gateway-test"
 	"github.com/MamangRust/monolith-payment-gateway-transfer/repository"
 	user_repo "github.com/MamangRust/monolith-payment-gateway-user/repository"
 
 	models "github.com/MamangRust/monolith-payment-gateway-pkg/database/models"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/suite"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"gorm.io/gorm"
 )
 
 type TransferRepositoryTestSuite struct {
 	suite.Suite
-	gormDB   *gorm.DB
-	ts       *tests.TestSuite
-	repo     repository.Repositories
-	cardRepo *card_repo.Repositories
-	userRepo user_repo.Repositories
-	userID   int
+	gormDB     *gorm.DB
+	ts         *tests.TestSuite
+	repo       repository.Repositories
+	cardRepo   *card_repo.Repositories
+	userRepo   *user_repo.Repositories
+	userClient *tests.UserClient
+	deps       *tests.DependencyClients
+	userID     int
 }
 
 func (s *TransferRepositoryTestSuite) SetupSuite() {
@@ -34,14 +41,33 @@ func (s *TransferRepositoryTestSuite) SetupSuite() {
 
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
-	s.Require().NoError(err)
+	s.gormDB = gormDB
 
-	s.userRepo = user_repo.NewRepositories(gormDB)
-	s.cardRepo = card_repo.NewRepositories(gormDB)
-	s.repo = repository.NewRepositories(gormDB, nil, nil)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	s.userRepo = user_repo.NewRepositories(&user_repo.Deps{Db: gormDB})
+	s.cardRepo = card_repo.NewRepositories(gormDB, userClient.Query, card_repo.GuardOptions{User: userClient.Guard()})
+
+	opts, err := redis.ParseURL(s.ts.RedisURL)
+	s.Require().NoError(err)
+	redisClient := redis.NewClient(opts)
+
+	logger.ResetInstance()
+	lp := sdklog.NewLoggerProvider()
+	log, _ := logger.NewLogger("test", lp)
+	cacheMetrics, _ := observability.NewCacheMetrics("test")
+	cacheStore := cache.NewCacheStore(redisClient, log, cacheMetrics)
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	s.repo = repository.NewRepositories(gormDB, deps.SaldoQuery, deps.SaldoCommand, deps.CardQuery, deps.CardCommand)
 
 	// Create user
-	user, err := s.userRepo.UserCommand().CreateUser(context.Background(), &requests.CreateUserRequest{
+	user, err := s.userRepo.UserCommand.CreateUser(context.Background(), &requests.CreateUserRequest{
 		FirstName: "Transfer",
 		LastName:  "Tester",
 		Email:     fmt.Sprintf("transfer.tester-%d@example.com", time.Now().UnixNano()),
@@ -52,7 +78,23 @@ func (s *TransferRepositoryTestSuite) SetupSuite() {
 }
 
 func (s *TransferRepositoryTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
+}
+
+// seedSaldo inserts an active saldo row with the given balance so the transfer
+// repository (which updates saldos via raw SQL) can debit/credit it.
+func (s *TransferRepositoryTestSuite) seedSaldo(cardNumber string, balance int) {
+	err := s.gormDB.Exec(
+		`INSERT INTO saldos (card_number, total_balance, created_at, updated_at) VALUES (?, ?, now(), now())`,
+		cardNumber, balance,
+	).Error
+	s.Require().NoError(err)
 }
 
 func (s *TransferRepositoryTestSuite) createSeedTransfer() (*models.TransferAllFieldsRow, error) {
@@ -77,6 +119,9 @@ func (s *TransferRepositoryTestSuite) createSeedTransfer() (*models.TransferAllF
 	if err != nil {
 		return nil, err
 	}
+
+	s.seedSaldo(fromCard.CardNumber, 1000000)
+	s.seedSaldo(toCard.CardNumber, 1000000)
 
 	res, err := s.repo.CreateTransferAtomic(context.Background(), &requests.CreateTransferRequest{
 		TransferFrom:   fromCard.CardNumber,
@@ -107,6 +152,9 @@ func (s *TransferRepositoryTestSuite) TestCreateTransfer() {
 		CVV:          "222",
 		CardProvider: "MasterCard",
 	})
+
+	s.seedSaldo(fromCard.CardNumber, 1000000)
+	s.seedSaldo(toCard.CardNumber, 1000000)
 
 	req := &requests.CreateTransferRequest{
 		TransferFrom:   fromCard.CardNumber,

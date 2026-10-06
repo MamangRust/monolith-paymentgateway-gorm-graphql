@@ -33,6 +33,7 @@ type TransactionGapiTestSuite struct {
 	suite.Suite
 	gormDB        *gorm.DB
 	ts            *tests.TestSuite
+	deps          *tests.DependencyClients
 	redisClient   *redis.Client
 	grpcServer    *grpc.Server
 	commandClient pb.TransactionCommandServiceClient
@@ -44,6 +45,7 @@ type TransactionGapiTestSuite struct {
 	cardRepo     card_repo.Repositories
 	saldoRepo    saldo_repo.Repositories
 	merchantRepo merchant_repo.Repositories
+	userClient   *tests.UserClient
 
 	customerCardNumber string
 	merchantID         int32
@@ -58,10 +60,14 @@ func (s *TransactionGapiTestSuite) SetupSuite() {
 
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
+
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
 	s.userRepo = user_repo.NewUserCommandRepository(gormDB)
-	s.cardRepo = *card_repo.NewRepositories(gormDB)
-	s.saldoRepo = saldo_repo.NewRepositories(gormDB)
-	s.merchantRepo = merchant_repo.NewRepositories(gormDB)
+	s.cardRepo = *card_repo.NewRepositories(gormDB, userClient.Query, card_repo.GuardOptions{User: userClient.Guard()})
+	s.merchantRepo = merchant_repo.NewRepositories(gormDB, userClient.Query, merchant_repo.GuardOptions{User: userClient.Guard()})
 
 	opts, err := redis.ParseURL(s.ts.RedisURL)
 	s.Require().NoError(err)
@@ -74,13 +80,25 @@ func (s *TransactionGapiTestSuite) SetupSuite() {
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(s.redisClient, log, cacheMetrics)
 
-	cardRepoWrapper := &transactionCardRepo{
-		db:      gormDB,
-		query:   s.cardRepo.CardQuery,
-		command: s.cardRepo.CardCommand,
-	}
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
 
-	transactionRepos := repository.NewRepositories(gormDB, s.saldoRepo, cardRepoWrapper, s.merchantRepo)
+	s.saldoRepo = saldo_repo.NewRepositories(gormDB, deps.CardQuery, deps.CardCommand)
+
+	transactionRepos := repository.NewRepositories(
+		gormDB,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		deps.CardQuery,
+		deps.CardCommand,
+		deps.MerchantQuery,
+		repository.GuardOptions{
+			Saldo:    tests.Guard("saldo", log),
+			Card:     tests.Guard("card", log),
+			Merchant: tests.Guard("merchant", log),
+		},
+	)
 	transactionService := service.NewService(&service.Deps{
 		Kafka:        nil,
 		Repositories: transactionRepos,
@@ -135,6 +153,12 @@ func (s *TransactionGapiTestSuite) TearDownSuite() {
 	}
 	if s.grpcServer != nil {
 		s.grpcServer.Stop()
+	}
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
+	if s.deps != nil {
+		s.deps.Close()
 	}
 	if s.redisClient != nil {
 		s.redisClient.Close()

@@ -26,6 +26,7 @@ type TransferServiceTestSuite struct {
 	suite.Suite
 	gormDB          *gorm.DB
 	ts              *tests.TestSuite
+	deps            *tests.DependencyClients
 	transferService service.Service
 	transferID      int
 	senderCard      string
@@ -44,15 +45,27 @@ func (s *TransferServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	cardRepo := &realCardRepo{query: card_repo_impl.NewCardQueryRepository(gormDB)}
-	saldoRepo := &realSaldoRepo{repo: saldo_repo_impl.NewRepositories(gormDB)}
-	repos := repository.NewRepositories(gormDB, saldoRepo, cardRepo)
-
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
 	log, _ := logger.NewLogger("test", lp)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(redisClient, log, cacheMetrics)
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(
+		gormDB,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		deps.CardQuery,
+		deps.CardCommand,
+		repository.GuardOptions{
+			Saldo: tests.Guard("saldo", log),
+			Card:  tests.Guard("card", log),
+		},
+	)
 
 	s.transferService = service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -110,6 +123,9 @@ func (s *TransferServiceTestSuite) SetupSuite() {
 }
 
 func (s *TransferServiceTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
 	s.ts.Teardown()
 }
 

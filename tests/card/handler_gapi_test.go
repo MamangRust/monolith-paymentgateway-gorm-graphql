@@ -29,12 +29,13 @@ import (
 
 type CardGapiTestSuite struct {
 	suite.Suite
-	gormDB *gorm.DB
-	ts     *tests.TestSuite
-	cardH  handler.Handler
-	userH  user_handler.Handler
-	userID int32
-	cardID int32
+	gormDB     *gorm.DB
+	ts         *tests.TestSuite
+	cardH      handler.Handler
+	userH      user_handler.Handler
+	userClient *tests.UserClient
+	userID     int32
+	cardID     int32
 }
 
 func (s *CardGapiTestSuite) SetupSuite() {
@@ -48,8 +49,12 @@ func (s *CardGapiTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	repos := repository.NewRepositories(gormDB)
-	userRepos := user_repository.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	repos := repository.NewRepositories(gormDB, userClient.Query, repository.GuardOptions{User: userClient.Guard()})
+	userRepos := user_repository.NewRepositories(&user_repository.Deps{Db: gormDB})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
@@ -89,6 +94,9 @@ func (s *CardGapiTestSuite) SetupSuite() {
 }
 
 func (s *CardGapiTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	if s.ts != nil {
 		s.ts.Teardown()
 	}

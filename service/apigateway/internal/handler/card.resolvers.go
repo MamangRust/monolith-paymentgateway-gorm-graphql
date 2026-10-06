@@ -7,7 +7,7 @@ package graph
 import (
 	"context"
 	"fmt"
-	errors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
+	sharedErrors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
 	"time"
 
 	"github.com/MamangRust/monolith-graphql-apigateway/internal/model"
@@ -23,7 +23,7 @@ func (r *mutationResolver) CreateCard(ctx context.Context, input model.CreateCar
 	return ResolverHandle(r.ResolverHandle, "CreateCard", ctx, func(ctx context.Context) (*model.APIResponseCard, error) {
 		expireDate, err := time.Parse("2006-01-02", input.ExpireDate)
 		if err != nil {
-			return nil, errors.NewBadRequestError(
+			return nil, sharedErrors.NewBadRequestError(
 				"invalid expire_date format, expected YYYY-MM-DD",
 			)
 		}
@@ -38,7 +38,7 @@ func (r *mutationResolver) CreateCard(ctx context.Context, input model.CreateCar
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 		req := &pb.CreateCardRequest{
 			UserId:       int32(request.UserID),
@@ -66,7 +66,7 @@ func (r *mutationResolver) UpdateCard(ctx context.Context, input model.UpdateCar
 		id := int(input.CardID)
 
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: card ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card ID cannot be zero")
 		}
 
 		expireDate, err := time.Parse("2006-01-02", input.ExpireDate)
@@ -85,7 +85,7 @@ func (r *mutationResolver) UpdateCard(ctx context.Context, input model.UpdateCar
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		req := &pb.UpdateCardRequest{
@@ -114,7 +114,7 @@ func (r *mutationResolver) TrashedCard(ctx context.Context, input model.FindByID
 	return ResolverHandle(r.ResolverHandle, "TrashedCard", ctx, func(ctx context.Context) (*model.APIResponseCardDeleteAt, error) {
 		id := int32(input.CardID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: card ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card ID cannot be zero")
 		}
 
 		res, errResp := r.CardGraphql.CardClient.CardCommandClient.TrashedCard(ctx, &pb.FindByIdCardRequest{CardId: id})
@@ -135,7 +135,7 @@ func (r *mutationResolver) RestoreCard(ctx context.Context, input model.FindByID
 	return ResolverHandle(r.ResolverHandle, "RestoreCard", ctx, func(ctx context.Context) (*model.APIResponseCardDeleteAt, error) {
 		id := int32(input.CardID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: card ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card ID cannot be zero")
 		}
 
 		res, errResp := r.CardGraphql.CardClient.CardCommandClient.RestoreCard(ctx, &pb.FindByIdCardRequest{CardId: id})
@@ -156,7 +156,7 @@ func (r *mutationResolver) DeleteCardPermanent(ctx context.Context, input model.
 	return ResolverHandle(r.ResolverHandle, "DeleteCardPermanent", ctx, func(ctx context.Context) (*model.APIResponseCardDelete, error) {
 		id := int32(input.CardID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: card ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card ID cannot be zero")
 		}
 
 		res, errResp := r.CardGraphql.CardClient.CardCommandClient.DeleteCardPermanent(ctx, &pb.FindByIdCardRequest{CardId: id})
@@ -253,7 +253,7 @@ func (r *queryResolver) FindByIDCard(ctx context.Context, input model.FindByIDCa
 	return ResolverHandle(r.ResolverHandle, "FindByIDCard", ctx, func(ctx context.Context) (*model.APIResponseCard, error) {
 		id := int32(input.CardID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: card ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card ID cannot be zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetByIdCache(ctx, int(id))
@@ -281,7 +281,7 @@ func (r *queryResolver) FindByUserIDCard(ctx context.Context, input model.FindBy
 	return ResolverHandle(r.ResolverHandle, "FindByUserIDCard", ctx, func(ctx context.Context) (*model.APIResponseCard, error) {
 		id := int32(input.UserID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: card user ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card user ID cannot be zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetByUserIDCache(ctx, int(id))
@@ -406,7 +406,7 @@ func (r *queryResolver) FindByCardNumber(ctx context.Context, input model.FindBy
 		cardNumber := input.CardNumber
 
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		res, err := r.CardGraphql.CardClient.CardQueryClient.FindByCardNumber(ctx, &pb.FindByCardNumberRequest{
@@ -453,7 +453,7 @@ func (r *queryResolver) DashboardCardNumber(ctx context.Context, input model.Fin
 		}
 
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("card number cannot be empty")
 		}
 
 		dashboardCard, err := r.CardGraphql.CardClient.CardDashboardClient.DashboardCardNumber(ctx, &pb.FindByCardNumberRequest{
@@ -476,7 +476,7 @@ func (r *queryResolver) FindMonthlyBalance(ctx context.Context, input model.Find
 	return ResolverHandle(r.ResolverHandle, "FindMonthlyBalance", ctx, func(ctx context.Context) (*model.APIResponseMonthlyBalance, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyBalanceCache(ctx, int(year))
@@ -504,7 +504,7 @@ func (r *queryResolver) FindYearlyBalance(ctx context.Context, input model.FindY
 	return ResolverHandle(r.ResolverHandle, "FindYearlyBalance", ctx, func(ctx context.Context) (*model.APIResponseYearlyBalance, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyBalanceCache(ctx, int(year))
@@ -532,7 +532,7 @@ func (r *queryResolver) FindMonthlyTopupAmount(ctx context.Context, input model.
 	return ResolverHandle(r.ResolverHandle, "FindMonthlyTopupAmount", ctx, func(ctx context.Context) (*model.APIResponseMonthlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyTopupCache(ctx, int(year))
@@ -559,7 +559,7 @@ func (r *queryResolver) FindYearlyTopupAmount(ctx context.Context, input model.F
 	return ResolverHandle(r.ResolverHandle, "FindYearlyTopupAmount", ctx, func(ctx context.Context) (*model.APIResponseYearlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyTopupCache(ctx, int(year))
@@ -587,7 +587,7 @@ func (r *queryResolver) FindMonthlyWithdrawAmount(ctx context.Context, input mod
 	return ResolverHandle(r.ResolverHandle, "FindMonthlyWithdrawAmount", ctx, func(ctx context.Context) (*model.APIResponseMonthlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyWithdrawCache(ctx, int(year))
@@ -615,7 +615,7 @@ func (r *queryResolver) FindYearlyWithdrawAmount(ctx context.Context, input mode
 	return ResolverHandle(r.ResolverHandle, "FindYearlyWithdrawAmount", ctx, func(ctx context.Context) (*model.APIResponseYearlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyWithdrawCache(ctx, int(year))
@@ -643,7 +643,7 @@ func (r *queryResolver) FindMonthlyTransactionAmount(ctx context.Context, input 
 	return ResolverHandle(r.ResolverHandle, "FindMonthlyTransactionAmount", ctx, func(ctx context.Context) (*model.APIResponseMonthlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyTransactionCache(ctx, int(year))
@@ -671,7 +671,7 @@ func (r *queryResolver) FindYearlyTransactionAmount(ctx context.Context, input m
 	return ResolverHandle(r.ResolverHandle, "FindYearlyTransactionAmount", ctx, func(ctx context.Context) (*model.APIResponseYearlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyTransactionCache(ctx, int(year))
@@ -699,7 +699,7 @@ func (r *queryResolver) FindMonthlyTransferSenderAmount(ctx context.Context, inp
 	return ResolverHandle(r.ResolverHandle, "FindMonthlyTransferSenderAmount", ctx, func(ctx context.Context) (*model.APIResponseMonthlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyTransferSenderCache(ctx, int(year))
@@ -727,7 +727,7 @@ func (r *queryResolver) FindYearlyTransferSenderAmount(ctx context.Context, inpu
 	return ResolverHandle(r.ResolverHandle, "FindYearlyTransferSenderAmount", ctx, func(ctx context.Context) (*model.APIResponseYearlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyTransferSenderCache(ctx, int(year))
@@ -755,7 +755,7 @@ func (r *queryResolver) FindMonthlyTransferReceiverAmount(ctx context.Context, i
 	return ResolverHandle(r.ResolverHandle, "FindMonthlyTransferReceiverAmount", ctx, func(ctx context.Context) (*model.APIResponseMonthlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyTransferReceiverCache(ctx, int(year))
@@ -783,7 +783,7 @@ func (r *queryResolver) FindYearlyTransferReceiverAmount(ctx context.Context, in
 	return ResolverHandle(r.ResolverHandle, "FindYearlyTransferReceiverAmount", ctx, func(ctx context.Context) (*model.APIResponseYearlyAmount, error) {
 		year := int32(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyTransferReceiverCache(ctx, int(year))
@@ -813,10 +813,10 @@ func (r *queryResolver) FindMonthlyBalanceByCardNumber(ctx context.Context, inpu
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyBalanceByNumberCache(ctx, &input)
@@ -849,10 +849,10 @@ func (r *queryResolver) FindYearlyBalanceByCardNumber(ctx context.Context, input
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyBalanceByNumberCache(ctx, &input)
@@ -885,10 +885,10 @@ func (r *queryResolver) FindMonthlyTopupAmountByCardNumber(ctx context.Context, 
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyTopupByNumberCache(ctx, &input)
@@ -921,10 +921,10 @@ func (r *queryResolver) FindYearlyTopupAmountByCardNumber(ctx context.Context, i
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyTopupByNumberCache(ctx, &input)
@@ -957,10 +957,10 @@ func (r *queryResolver) FindMonthlyWithdrawAmountByCardNumber(ctx context.Contex
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyWithdrawByNumberCache(ctx, &input)
@@ -993,10 +993,10 @@ func (r *queryResolver) FindYearlyWithdrawAmountByCardNumber(ctx context.Context
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyWithdrawByNumberCache(ctx, &input)
@@ -1029,10 +1029,10 @@ func (r *queryResolver) FindMonthlyTransactionAmountByCardNumber(ctx context.Con
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyTransactionByNumberCache(ctx, &input)
@@ -1065,10 +1065,10 @@ func (r *queryResolver) FindYearlyTransactionAmountByCardNumber(ctx context.Cont
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyTransactionByNumberCache(ctx, &input)
@@ -1101,10 +1101,10 @@ func (r *queryResolver) FindMonthlyTransferSenderAmountByCardNumber(ctx context.
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyTransferBySenderCache(ctx, &input)
@@ -1137,10 +1137,10 @@ func (r *queryResolver) FindYearlyTransferSenderAmountByCardNumber(ctx context.C
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyTransferBySenderCache(ctx, &input)
@@ -1173,10 +1173,10 @@ func (r *queryResolver) FindMonthlyTransferReceiverAmountByCardNumber(ctx contex
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetMonthlyTransferByReceiverCache(ctx, &input)
@@ -1209,10 +1209,10 @@ func (r *queryResolver) FindYearlyTransferReceiverAmountByCardNumber(ctx context
 		cardNumber := input.CardNumber
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.CardGraphql.Cache.GetYearlyTransferByReceiverCache(ctx, &input)

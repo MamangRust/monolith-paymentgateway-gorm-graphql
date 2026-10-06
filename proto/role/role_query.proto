@@ -31,4 +31,10 @@ service RoleService {
       returns (ApiResponsePaginationRoleDeleteAt) {}
 
   rpc FindByUserId(FindByIdUserRoleRequest) returns (ApiResponsesRole) {}
+
+  rpc FindByName(FindByNameRoleRequest) returns (ApiResponseRole) {}
+}
+
+message FindByNameRoleRequest {
+  string name = 1;
 }

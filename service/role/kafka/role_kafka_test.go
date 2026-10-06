@@ -32,6 +32,9 @@ func (f *roleTestService) FindByTrashedRole(context.Context, *requests.FindAllRo
 	return nil, nil, nil
 }
 func (f *roleTestService) FindById(context.Context, int) (*models.Role, error) { return nil, nil }
+func (f *roleTestService) FindByName(context.Context, string) (*models.Role, error) {
+	return nil, nil
+}
 func (f *roleTestService) FindByUserId(context.Context, int) ([]*models.Role, error) {
 	return f.roles, f.err
 }

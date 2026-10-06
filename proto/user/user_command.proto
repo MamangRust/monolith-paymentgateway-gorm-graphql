@@ -15,6 +15,25 @@ message CreateUserRequest {
   string confirm_password = 5;
 }
 
+message RegisterUserRequest {
+  string firstname = 1;
+  string lastname = 2;
+  string email = 3;
+  string password = 4;
+  string verification_code = 5;
+  bool is_verified = 6;
+}
+
+message UpdateUserIsVerifiedRequest {
+  int32 user_id = 1;
+  bool is_verified = 2;
+}
+
+message UpdateUserPasswordRequest {
+  int32 user_id = 1;
+  string password = 2;
+}
+
 message UpdateUserRequest {
   int32 id = 1;
   string firstname = 2;
@@ -40,6 +59,10 @@ service UserCommandService {
   rpc TrashedUser(FindByIdUserRequest) returns (ApiResponseUserDeleteAt);
   rpc RestoreUser(FindByIdUserRequest) returns (ApiResponseUserDeleteAt);
   rpc DeleteUserPermanent(FindByIdUserRequest) returns (ApiResponseUserDelete);
+
+  rpc CreateUser(RegisterUserRequest) returns (ApiResponseUser);
+  rpc UpdateUserIsVerified(UpdateUserIsVerifiedRequest) returns (ApiResponseUser);
+  rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (ApiResponseUser);
 
   rpc RestoreAllUser(google.protobuf.Empty) returns (ApiResponseUserAll) {}
   rpc DeleteAllUserPermanent(google.protobuf.Empty)

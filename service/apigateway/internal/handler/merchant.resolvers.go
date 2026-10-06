@@ -7,7 +7,7 @@ package graph
 import (
 	"context"
 	"fmt"
-	errors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
+	sharedErrors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
 
 	"github.com/MamangRust/monolith-graphql-apigateway/internal/model"
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/merchant"
@@ -25,7 +25,7 @@ func (r *mutationResolver) CreateMerchant(ctx context.Context, input model.Creat
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		reqPb := &pb.CreateMerchantRequest{
@@ -48,7 +48,7 @@ func (r *mutationResolver) UpdateMerchant(ctx context.Context, input model.Updat
 	return ResolverHandle(r.ResolverHandle, "UpdateMerchant", ctx, func(ctx context.Context) (*model.APIResponseMerchant, error) {
 		id := int(input.MerchantID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		request := requests.UpdateMerchantRequest{
@@ -60,7 +60,7 @@ func (r *mutationResolver) UpdateMerchant(ctx context.Context, input model.Updat
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		reqpb := &pb.UpdateMerchantRequest{
@@ -88,7 +88,7 @@ func (r *mutationResolver) UpdateMerchantStatus(ctx context.Context, input model
 	return ResolverHandle(r.ResolverHandle, "UpdateMerchantStatus", ctx, func(ctx context.Context) (*model.APIResponseMerchant, error) {
 		id := int(input.MerchantID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		request := requests.UpdateMerchantStatusRequest{
@@ -98,7 +98,7 @@ func (r *mutationResolver) UpdateMerchantStatus(ctx context.Context, input model
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		reqpb := &pb.UpdateMerchantStatusRequest{
@@ -124,7 +124,7 @@ func (r *mutationResolver) TrashedMerchant(ctx context.Context, input model.Find
 	return ResolverHandle(r.ResolverHandle, "TrashedMerchant", ctx, func(ctx context.Context) (*model.APIResponseMerchantDeleteAt, error) {
 		id := int32(input.MerchantID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		merchant, err := r.MerchantGraphql.MerchantClient.MerchantCommand.TrashedMerchant(ctx, &pb.FindByIdMerchantRequest{
@@ -147,7 +147,7 @@ func (r *mutationResolver) RestoreMerchant(ctx context.Context, input model.Find
 	return ResolverHandle(r.ResolverHandle, "RestoreMerchant", ctx, func(ctx context.Context) (*model.APIResponseMerchantDeleteAt, error) {
 		id := int32(input.MerchantID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		merchant, err := r.MerchantGraphql.MerchantClient.MerchantCommand.RestoreMerchant(ctx, &pb.FindByIdMerchantRequest{
@@ -170,7 +170,7 @@ func (r *mutationResolver) DeleteMerchantPermanent(ctx context.Context, input mo
 	return ResolverHandle(r.ResolverHandle, "DeleteMerchantPermanent", ctx, func(ctx context.Context) (*model.APIResponseMerchantDelete, error) {
 		id := int32(input.MerchantID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		merchant, err := r.MerchantGraphql.MerchantClient.MerchantCommand.DeleteMerchantPermanent(ctx, &pb.FindByIdMerchantRequest{
@@ -215,7 +215,8 @@ func (r *mutationResolver) DeleteAllMerchantPermanent(ctx context.Context) (*mod
 }
 
 // FindAllMerchant is the resolver for the findAllMerchant field.
-func (r *queryResolver) FindAllMerchant(ctx context.Context, input model.FindAllMerchantInput) (*model.APIResponsePaginationMerchant, error) { // Normalize input for consistent caching and backend request
+func (r *queryResolver) FindAllMerchant(ctx context.Context, input model.FindAllMerchantInput) (*model.APIResponsePaginationMerchant, error) {
+	// Normalize input for consistent caching and backend request
 	page := int32(1)
 	pageSize := int32(10)
 	search := ""
@@ -270,7 +271,7 @@ func (r *queryResolver) FindAllMerchant(ctx context.Context, input model.FindAll
 func (r *queryResolver) FindByIDMerchant(ctx context.Context, input model.FindByIDMerchantInput) (*model.APIResponseMerchant, error) {
 	id := int(input.MerchantID)
 	if id == 0 {
-		return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+		return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 	}
 
 	cachedData, found := r.MerchantGraphql.Cache.GetCachedMerchant(ctx, id)
@@ -373,7 +374,7 @@ func (r *queryResolver) FindMonthlyPaymentMethodsMerchant(ctx context.Context, i
 		year := int(input.Year)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyPaymentMethodsMerchantCache(ctx, year)
@@ -402,7 +403,7 @@ func (r *queryResolver) FindYearlyPaymentMethodMerchant(ctx context.Context, inp
 		year := int(input.Year)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyPaymentMethodMerchantCache(ctx, year)
@@ -431,7 +432,7 @@ func (r *queryResolver) FindMonthlyAmountMerchant(ctx context.Context, input mod
 		year := int(input.Year)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyAmountMerchantCache(ctx, year)
@@ -460,7 +461,7 @@ func (r *queryResolver) FindYearlyAmountMerchant(ctx context.Context, input mode
 		year := int(input.Year)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyAmountMerchantCache(ctx, year)
@@ -489,7 +490,7 @@ func (r *queryResolver) FindMonthlyTotalAmountMerchant(ctx context.Context, inpu
 		year := int(input.Year)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyTotalAmountMerchantCache(ctx, year)
@@ -518,7 +519,7 @@ func (r *queryResolver) FindYearlyTotalAmountMerchant(ctx context.Context, input
 		year := int(input.Year)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyTotalAmountMerchantCache(ctx, year)
@@ -604,10 +605,10 @@ func (r *queryResolver) FindMonthlyPaymentMethodByMerchants(ctx context.Context,
 		merchantId := int32(input.MerchantID)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if merchantId <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyPaymentMethodByMerchantsCache(ctx, &input)
@@ -640,10 +641,10 @@ func (r *queryResolver) FindYearlyPaymentMethodByMerchants(ctx context.Context, 
 		merchantId := int32(input.MerchantID)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if merchantId <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyPaymentMethodByMerchantsCache(ctx, &input)
@@ -676,10 +677,10 @@ func (r *queryResolver) FindMonthlyAmountByMerchants(ctx context.Context, input 
 		merchantId := int32(input.MerchantID)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if merchantId <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyAmountByMerchantsCache(ctx, &input)
@@ -712,10 +713,10 @@ func (r *queryResolver) FindYearlyAmountByMerchants(ctx context.Context, input m
 		merchantId := int32(input.MerchantID)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if merchantId <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyAmountByMerchantsCache(ctx, &input)
@@ -748,10 +749,10 @@ func (r *queryResolver) FindMonthlyTotalAmountByMerchants(ctx context.Context, i
 		merchantId := int32(input.MerchantID)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if merchantId <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyTotalAmountByMerchantsCache(ctx, &input)
@@ -784,10 +785,10 @@ func (r *queryResolver) FindYearlyTotalAmountByMerchants(ctx context.Context, in
 		merchantId := int32(input.MerchantID)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if merchantId <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: merchant ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: merchant ID cannot be zero")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyTotalAmountByMerchantsCache(ctx, &input)
@@ -876,11 +877,11 @@ func (r *queryResolver) FindMonthlyPaymentMethodByApikey(ctx context.Context, in
 		apiKey := input.APIKey
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		if apiKey == "" {
-			return nil, errors.NewBadRequestError("invalid request: API key cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: API key cannot be empty")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyPaymentMethodByApikeysCache(ctx, &input)
@@ -913,11 +914,11 @@ func (r *queryResolver) FindYearlyPaymentMethodByApikey(ctx context.Context, inp
 		apiKey := input.APIKey
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		if apiKey == "" {
-			return nil, errors.NewBadRequestError("invalid request: API key cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: API key cannot be empty")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyPaymentMethodByApikeysCache(ctx, &input)
@@ -950,11 +951,11 @@ func (r *queryResolver) FindMonthlyAmountByApikey(ctx context.Context, input mod
 		apiKey := input.APIKey
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		if apiKey == "" {
-			return nil, errors.NewBadRequestError("invalid request: API key cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: API key cannot be empty")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyAmountByApikeysCache(ctx, &input)
@@ -987,11 +988,11 @@ func (r *queryResolver) FindYearlyAmountByApikey(ctx context.Context, input mode
 		apiKey := input.APIKey
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		if apiKey == "" {
-			return nil, errors.NewBadRequestError("invalid request: API key cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: API key cannot be empty")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyAmountByApikeysCache(ctx, &input)
@@ -1024,11 +1025,11 @@ func (r *queryResolver) FindMonthlyTotalAmountByApikey(ctx context.Context, inpu
 		apiKey := input.APIKey
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		if apiKey == "" {
-			return nil, errors.NewBadRequestError("invalid request: API key cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: API key cannot be empty")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetMonthlyTotalAmountByApikeysCache(ctx, &input)
@@ -1061,11 +1062,11 @@ func (r *queryResolver) FindYearlyTotalAmountByApikey(ctx context.Context, input
 		apiKey := input.APIKey
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		if apiKey == "" {
-			return nil, errors.NewBadRequestError("invalid request: API key cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: API key cannot be empty")
 		}
 
 		cachedData, found := r.MerchantGraphql.Cache.GetYearlyTotalAmountByApikeysCache(ctx, &input)

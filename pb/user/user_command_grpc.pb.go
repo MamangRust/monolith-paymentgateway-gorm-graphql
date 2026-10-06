@@ -25,6 +25,9 @@ const (
 	UserCommandService_TrashedUser_FullMethodName            = "/pb.user.UserCommandService/TrashedUser"
 	UserCommandService_RestoreUser_FullMethodName            = "/pb.user.UserCommandService/RestoreUser"
 	UserCommandService_DeleteUserPermanent_FullMethodName    = "/pb.user.UserCommandService/DeleteUserPermanent"
+	UserCommandService_CreateUser_FullMethodName             = "/pb.user.UserCommandService/CreateUser"
+	UserCommandService_UpdateUserIsVerified_FullMethodName   = "/pb.user.UserCommandService/UpdateUserIsVerified"
+	UserCommandService_UpdateUserPassword_FullMethodName     = "/pb.user.UserCommandService/UpdateUserPassword"
 	UserCommandService_RestoreAllUser_FullMethodName         = "/pb.user.UserCommandService/RestoreAllUser"
 	UserCommandService_DeleteAllUserPermanent_FullMethodName = "/pb.user.UserCommandService/DeleteAllUserPermanent"
 )
@@ -38,6 +41,9 @@ type UserCommandServiceClient interface {
 	TrashedUser(ctx context.Context, in *FindByIdUserRequest, opts ...grpc.CallOption) (*ApiResponseUserDeleteAt, error)
 	RestoreUser(ctx context.Context, in *FindByIdUserRequest, opts ...grpc.CallOption) (*ApiResponseUserDeleteAt, error)
 	DeleteUserPermanent(ctx context.Context, in *FindByIdUserRequest, opts ...grpc.CallOption) (*ApiResponseUserDelete, error)
+	CreateUser(ctx context.Context, in *RegisterUserRequest, opts ...grpc.CallOption) (*ApiResponseUser, error)
+	UpdateUserIsVerified(ctx context.Context, in *UpdateUserIsVerifiedRequest, opts ...grpc.CallOption) (*ApiResponseUser, error)
+	UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordRequest, opts ...grpc.CallOption) (*ApiResponseUser, error)
 	RestoreAllUser(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ApiResponseUserAll, error)
 	DeleteAllUserPermanent(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ApiResponseUserAll, error)
 }
@@ -100,6 +106,36 @@ func (c *userCommandServiceClient) DeleteUserPermanent(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *userCommandServiceClient) CreateUser(ctx context.Context, in *RegisterUserRequest, opts ...grpc.CallOption) (*ApiResponseUser, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApiResponseUser)
+	err := c.cc.Invoke(ctx, UserCommandService_CreateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userCommandServiceClient) UpdateUserIsVerified(ctx context.Context, in *UpdateUserIsVerifiedRequest, opts ...grpc.CallOption) (*ApiResponseUser, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApiResponseUser)
+	err := c.cc.Invoke(ctx, UserCommandService_UpdateUserIsVerified_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userCommandServiceClient) UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordRequest, opts ...grpc.CallOption) (*ApiResponseUser, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApiResponseUser)
+	err := c.cc.Invoke(ctx, UserCommandService_UpdateUserPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userCommandServiceClient) RestoreAllUser(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ApiResponseUserAll, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ApiResponseUserAll)
@@ -129,6 +165,9 @@ type UserCommandServiceServer interface {
 	TrashedUser(context.Context, *FindByIdUserRequest) (*ApiResponseUserDeleteAt, error)
 	RestoreUser(context.Context, *FindByIdUserRequest) (*ApiResponseUserDeleteAt, error)
 	DeleteUserPermanent(context.Context, *FindByIdUserRequest) (*ApiResponseUserDelete, error)
+	CreateUser(context.Context, *RegisterUserRequest) (*ApiResponseUser, error)
+	UpdateUserIsVerified(context.Context, *UpdateUserIsVerifiedRequest) (*ApiResponseUser, error)
+	UpdateUserPassword(context.Context, *UpdateUserPasswordRequest) (*ApiResponseUser, error)
 	RestoreAllUser(context.Context, *emptypb.Empty) (*ApiResponseUserAll, error)
 	DeleteAllUserPermanent(context.Context, *emptypb.Empty) (*ApiResponseUserAll, error)
 	mustEmbedUnimplementedUserCommandServiceServer()
@@ -155,6 +194,15 @@ func (UnimplementedUserCommandServiceServer) RestoreUser(context.Context, *FindB
 }
 func (UnimplementedUserCommandServiceServer) DeleteUserPermanent(context.Context, *FindByIdUserRequest) (*ApiResponseUserDelete, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteUserPermanent not implemented")
+}
+func (UnimplementedUserCommandServiceServer) CreateUser(context.Context, *RegisterUserRequest) (*ApiResponseUser, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
+}
+func (UnimplementedUserCommandServiceServer) UpdateUserIsVerified(context.Context, *UpdateUserIsVerifiedRequest) (*ApiResponseUser, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserIsVerified not implemented")
+}
+func (UnimplementedUserCommandServiceServer) UpdateUserPassword(context.Context, *UpdateUserPasswordRequest) (*ApiResponseUser, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserPassword not implemented")
 }
 func (UnimplementedUserCommandServiceServer) RestoreAllUser(context.Context, *emptypb.Empty) (*ApiResponseUserAll, error) {
 	return nil, status.Error(codes.Unimplemented, "method RestoreAllUser not implemented")
@@ -273,6 +321,60 @@ func _UserCommandService_DeleteUserPermanent_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserCommandService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserCommandServiceServer).CreateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserCommandService_CreateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserCommandServiceServer).CreateUser(ctx, req.(*RegisterUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserCommandService_UpdateUserIsVerified_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserIsVerifiedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserCommandServiceServer).UpdateUserIsVerified(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserCommandService_UpdateUserIsVerified_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserCommandServiceServer).UpdateUserIsVerified(ctx, req.(*UpdateUserIsVerifiedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserCommandService_UpdateUserPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserCommandServiceServer).UpdateUserPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserCommandService_UpdateUserPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserCommandServiceServer).UpdateUserPassword(ctx, req.(*UpdateUserPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserCommandService_RestoreAllUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
@@ -335,6 +437,18 @@ var UserCommandService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteUserPermanent",
 			Handler:    _UserCommandService_DeleteUserPermanent_Handler,
+		},
+		{
+			MethodName: "CreateUser",
+			Handler:    _UserCommandService_CreateUser_Handler,
+		},
+		{
+			MethodName: "UpdateUserIsVerified",
+			Handler:    _UserCommandService_UpdateUserIsVerified_Handler,
+		},
+		{
+			MethodName: "UpdateUserPassword",
+			Handler:    _UserCommandService_UpdateUserPassword_Handler,
 		},
 		{
 			MethodName: "RestoreAllUser",

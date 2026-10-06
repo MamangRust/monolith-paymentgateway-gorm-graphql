@@ -67,6 +67,32 @@ func (s *SaldoStatsRepositoryTestSuite) TestBalanceStats() {
 func (s *SaldoStatsRepositoryTestSuite) TestTotalStats() {
 	ctx := context.Background()
 
+	// Seed one active saldo in the current month and one in the previous month
+	// so the monthly total-balance query returns the two expected periods.
+	// saldos.card_number is a FK to cards, so the cards are created first.
+	now := time.Now()
+	cur := time.Date(s.testYear, time.Month(now.Month()), 15, 10, 0, 0, 0, time.UTC)
+	prev := cur.AddDate(0, -1, 0)
+
+	var userID int32
+	err := s.gormDB.WithContext(ctx).Raw(
+		"INSERT INTO users (firstname, lastname, email, password, verification_code, is_verified) VALUES ('Saldo', 'TotalStats', 'saldo_stats_total@example.com', 'pass', '123', true) RETURNING user_id",
+	).Scan(&userID).Error
+	s.Require().NoError(err)
+
+	for _, cardNumber := range []string{"9999888877776666", "8888777766665555"} {
+		s.Require().NoError(s.gormDB.WithContext(ctx).Exec(
+			"INSERT INTO cards (user_id, card_number, card_type, cvv, card_provider, expire_date) VALUES (?, ?, 'debit', '123', 'visa', '2030-01-01')",
+			userID, cardNumber).Error)
+	}
+
+	s.Require().NoError(s.gormDB.WithContext(ctx).Exec(
+		"INSERT INTO saldos (card_number, total_balance, created_at, updated_at) VALUES (?, ?, ?, ?)",
+		"9999888877776666", 50000, cur, cur).Error)
+	s.Require().NoError(s.gormDB.WithContext(ctx).Exec(
+		"INSERT INTO saldos (card_number, total_balance, created_at, updated_at) VALUES (?, ?, ?, ?)",
+		"8888777766665555", 50000, prev, prev).Error)
+
 	// Monthly Total Balance (2 periods)
 	req := &requests.MonthTotalSaldoBalance{
 		Year:  s.testYear,

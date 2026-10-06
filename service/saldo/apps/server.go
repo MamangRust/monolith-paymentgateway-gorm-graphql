@@ -2,7 +2,12 @@ package apps
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	pbcard "github.com/MamangRust/monolith-payment-gateway-pb/card"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/adapter"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/resilience"
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/saldo"
 	pbstats "github.com/MamangRust/monolith-payment-gateway-pb/saldo/stats"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/kafka"
@@ -14,6 +19,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func NewServer(cfg *server.Config) (*server.GRPCServer, error) {
@@ -22,7 +28,29 @@ func NewServer(cfg *server.Config) (*server.GRPCServer, error) {
 		return nil, err
 	}
 
-	repos := repository.NewRepositories(srv.GormDB)
+	connCard, err := grpc.NewClient(
+		viper.GetString("GRPC_CARD_ADDR"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("connect to card service: %w", err)
+	}
+	srv.AddCleanupHook(func() error {
+		return connCard.Close()
+	})
+
+	cardClientQuery := pbcard.NewCardQueryServiceClient(connCard)
+	cardClientCmd := pbcard.NewCardCommandServiceClient(connCard)
+
+	guardCard := resilience.NewDependencyGuard("card", 5, 30, 100, 3*time.Second, srv.Logger)
+
+	repos := repository.NewRepositories(srv.GormDB, cardClientQuery, cardClientCmd,
+		repository.GuardOptions{
+			Card: []adapter.GuardOption{
+				adapter.WithDependencyGuard(guardCard),
+			},
+		},
+	)
 
 	mykafka := kafka.NewKafka(srv.Logger, []string{viper.GetString("KAFKA_BROKERS")})
 	srv.AddCleanupHook(mykafka.Close)

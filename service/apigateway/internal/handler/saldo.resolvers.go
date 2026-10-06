@@ -6,7 +6,7 @@ package graph
 
 import (
 	"context"
-	errors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
+	sharedErrors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
 
 	"github.com/MamangRust/monolith-graphql-apigateway/internal/model"
 	pbcard "github.com/MamangRust/monolith-payment-gateway-pb/card"
@@ -25,7 +25,7 @@ func (r *mutationResolver) CreateSaldo(ctx context.Context, input model.CreateSa
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		req := &pb.CreateSaldoRequest{
@@ -49,7 +49,7 @@ func (r *mutationResolver) UpdateSaldo(ctx context.Context, input model.UpdateSa
 	return ResolverHandle(r.ResolverHandle, "UpdateSaldo", ctx, func(ctx context.Context) (*model.APIResponseSaldo, error) {
 		id := int(input.SaldoID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: saldo ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: saldo ID cannot be zero")
 		}
 
 		request := requests.UpdateSaldoRequest{
@@ -60,7 +60,7 @@ func (r *mutationResolver) UpdateSaldo(ctx context.Context, input model.UpdateSa
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		req := &pb.UpdateSaldoRequest{
@@ -87,7 +87,7 @@ func (r *mutationResolver) TrashedSaldo(ctx context.Context, input model.FindByI
 	return ResolverHandle(r.ResolverHandle, "TrashedSaldo", ctx, func(ctx context.Context) (*model.APIResponseSaldoDeleteAt, error) {
 		id := int(input.SaldoID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: saldo ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: saldo ID cannot be zero")
 		}
 
 		saldo, err := r.SaldoGraphql.SaldoClient.SaldoCommandClient.TrashedSaldo(ctx, &pb.FindByIdSaldoRequest{SaldoId: int32(id)})
@@ -108,7 +108,7 @@ func (r *mutationResolver) RestoreSaldo(ctx context.Context, input model.FindByI
 	return ResolverHandle(r.ResolverHandle, "RestoreSaldo", ctx, func(ctx context.Context) (*model.APIResponseSaldoDeleteAt, error) {
 		id := int(input.SaldoID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: saldo ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: saldo ID cannot be zero")
 		}
 
 		saldo, err := r.SaldoGraphql.SaldoClient.SaldoCommandClient.RestoreSaldo(ctx, &pb.FindByIdSaldoRequest{SaldoId: int32(id)})
@@ -129,7 +129,7 @@ func (r *mutationResolver) DeleteSaldoPermanent(ctx context.Context, input model
 	return ResolverHandle(r.ResolverHandle, "DeleteSaldoPermanent", ctx, func(ctx context.Context) (*model.APIResponseSaldoDelete, error) {
 		id := int(input.SaldoID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: saldo ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: saldo ID cannot be zero")
 		}
 
 		res, err := r.SaldoGraphql.SaldoClient.SaldoCommandClient.DeleteSaldoPermanent(ctx, &pb.FindByIdSaldoRequest{
@@ -228,7 +228,7 @@ func (r *queryResolver) FindByIDSaldo(ctx context.Context, input model.FindByIDS
 	return ResolverHandle(r.ResolverHandle, "FindByIDSaldo", ctx, func(ctx context.Context) (*model.APIResponseSaldo, error) {
 		id := int(input.SaldoID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid request: saldo ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: saldo ID cannot be zero")
 		}
 
 		cachedData, found := r.SaldoGraphql.Cache.GetCachedSaldoById(ctx, id)
@@ -256,10 +256,10 @@ func (r *queryResolver) FindMonthlyTotalSaldoBalance(ctx context.Context, input 
 		month := int32(input.Month)
 
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 		if month <= 0 || month > 12 {
-			return nil, errors.NewBadRequestError("invalid request: month must be between 1 and 12")
+			return nil, sharedErrors.NewBadRequestError("invalid request: month must be between 1 and 12")
 		}
 
 		cachedData, found := r.SaldoGraphql.Cache.GetMonthlyTotalSaldoBalanceCache(ctx, &input)
@@ -290,7 +290,7 @@ func (r *queryResolver) FindYearTotalSaldoBalance(ctx context.Context, input mod
 	return ResolverHandle(r.ResolverHandle, "FindYearTotalSaldoBalance", ctx, func(ctx context.Context) (*model.APIResponseYearTotalSaldo, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.SaldoGraphql.Cache.GetYearTotalSaldoBalanceCache(ctx, year)
@@ -320,7 +320,7 @@ func (r *queryResolver) FindMonthlySaldoBalances(ctx context.Context, input mode
 	return ResolverHandle(r.ResolverHandle, "FindMonthlySaldoBalances", ctx, func(ctx context.Context) (*model.APIResponseMonthSaldoBalances, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.SaldoGraphql.Cache.GetMonthlySaldoBalanceCache(ctx, year)
@@ -350,7 +350,7 @@ func (r *queryResolver) FindYearlySaldoBalances(ctx context.Context, input model
 	return ResolverHandle(r.ResolverHandle, "FindYearlySaldoBalances", ctx, func(ctx context.Context) (*model.APIResponseYearSaldoBalances, error) {
 		year := int(input.Year)
 		if year <= 0 {
-			return nil, errors.NewBadRequestError("invalid request: year must be greater than zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: year must be greater than zero")
 		}
 
 		cachedData, found := r.SaldoGraphql.Cache.GetYearlySaldoBalanceCache(ctx, year)
@@ -379,7 +379,7 @@ func (r *queryResolver) FindYearlySaldoBalances(ctx context.Context, input model
 func (r *queryResolver) FindByCardNumberSaldo(ctx context.Context, cardNumber string) (*model.APIResponseSaldo, error) {
 	return ResolverHandle(r.ResolverHandle, "FindByCardNumberSaldo", ctx, func(ctx context.Context) (*model.APIResponseSaldo, error) {
 		if cardNumber == "" {
-			return nil, errors.NewBadRequestError("invalid request: card number cannot be empty")
+			return nil, sharedErrors.NewBadRequestError("invalid request: card number cannot be empty")
 		}
 
 		cachedData, found := r.SaldoGraphql.Cache.GetCachedSaldoByCardNumber(ctx, cardNumber)

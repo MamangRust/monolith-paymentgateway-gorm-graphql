@@ -7,7 +7,7 @@ package graph
 import (
 	"context"
 	"fmt"
-	errors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
+	sharedErrors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
 
 	"github.com/MamangRust/monolith-graphql-apigateway/internal/model"
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/user"
@@ -28,7 +28,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 
 		if err := req.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		reqPb := &pb.CreateUserRequest{
@@ -54,7 +54,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUse
 	return ResolverHandle(r.ResolverHandle, "UpdateUser", ctx, func(ctx context.Context) (*model.APIResponseUser, error) {
 		id := int(input.ID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid user ID")
+			return nil, sharedErrors.NewBadRequestError("invalid user ID")
 		}
 
 		req := &requests.UpdateUserRequest{
@@ -68,7 +68,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUse
 
 		if err := req.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		reqPb := &pb.UpdateUserRequest{
@@ -98,7 +98,7 @@ func (r *mutationResolver) TrashedUser(ctx context.Context, input model.FindByID
 	return ResolverHandle(r.ResolverHandle, "TrashedUser", ctx, func(ctx context.Context) (*model.APIResponseUserDeleteAt, error) {
 		id := int32(input.ID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid user ID")
+			return nil, sharedErrors.NewBadRequestError("invalid user ID")
 		}
 
 		user, err := r.UserGraphql.UserClient.UserCommandClient.TrashedUser(ctx, &pb.FindByIdUserRequest{Id: id})
@@ -119,7 +119,7 @@ func (r *mutationResolver) RestoreUser(ctx context.Context, input model.FindByID
 	return ResolverHandle(r.ResolverHandle, "RestoreUser", ctx, func(ctx context.Context) (*model.APIResponseUserDeleteAt, error) {
 		id := int32(input.ID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid user ID")
+			return nil, sharedErrors.NewBadRequestError("invalid user ID")
 		}
 
 		user, err := r.UserGraphql.UserClient.UserCommandClient.RestoreUser(ctx, &pb.FindByIdUserRequest{Id: id})
@@ -140,7 +140,7 @@ func (r *mutationResolver) DeleteUserPermanent(ctx context.Context, input model.
 	return ResolverHandle(r.ResolverHandle, "DeleteUserPermanent", ctx, func(ctx context.Context) (*model.APIResponseUserDelete, error) {
 		id := int32(input.ID)
 		if id == 0 {
-			return nil, errors.NewBadRequestError("invalid user ID")
+			return nil, sharedErrors.NewBadRequestError("invalid user ID")
 		}
 
 		res, err := r.UserGraphql.UserClient.UserCommandClient.DeleteUserPermanent(ctx, &pb.FindByIdUserRequest{Id: id})

@@ -27,7 +27,7 @@ type UserServiceTestSuite struct {
 	ts          *tests.TestSuite
 	redisClient *redis.Client
 	userService service.Service
-	userRepo    repository.Repositories
+	userRepo    *repository.Repositories
 	userID      int
 }
 
@@ -42,7 +42,7 @@ func (s *UserServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.redisClient = redis.NewClient(opts)
 
-	s.userRepo = repository.NewRepositories(gormDB)
+	s.userRepo = repository.NewRepositories(&repository.Deps{Db: gormDB})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()

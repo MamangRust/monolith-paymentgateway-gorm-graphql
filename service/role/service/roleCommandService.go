@@ -262,3 +262,79 @@ func (s *roleCommandService) DeleteAllRolePermanent(ctx context.Context) (bool, 
 	logSuccess("Successfully deleted all roles permanently")
 	return true, nil
 }
+
+func (s *roleCommandService) AssignRoleToUser(ctx context.Context, request *requests.CreateUserRoleRequest) (*models.UserRole, error) {
+	const method = "AssignRoleToUser"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method,
+		attribute.Int("userID", request.UserId),
+		attribute.Int("roleID", request.RoleId))
+
+	defer func() {
+		end(status)
+	}()
+
+	s.logger.Debug("Starting AssignRoleToUser process",
+		zap.Int("userID", request.UserId),
+		zap.Int("roleID", request.RoleId),
+	)
+
+	userRole, err := s.roleCommand.AssignRoleToUser(ctx, request)
+	if err != nil {
+		status = "error"
+		return errorhandler.HandleError[*models.UserRole](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.Int("user_id", request.UserId),
+			zap.Int("role_id", request.RoleId),
+		)
+	}
+
+	s.mencache.DeleteCachedRole(ctx, request.RoleId)
+	logSuccess("AssignRoleToUser process completed",
+		zap.Int("userID", request.UserId),
+		zap.Int("roleID", request.RoleId),
+	)
+
+	return userRole, nil
+}
+
+func (s *roleCommandService) RemoveRoleFromUser(ctx context.Context, request *requests.RemoveUserRoleRequest) error {
+	const method = "RemoveRoleFromUser"
+
+	ctx, span, end, status, logSuccess := s.observability.StartTracingAndLogging(ctx, method,
+		attribute.Int("userID", request.UserId),
+		attribute.Int("roleID", request.RoleId))
+
+	defer func() {
+		end(status)
+	}()
+
+	s.logger.Debug("Starting RemoveRoleFromUser process",
+		zap.Int("userID", request.UserId),
+		zap.Int("roleID", request.RoleId),
+	)
+
+	if err := s.roleCommand.RemoveRoleFromUser(ctx, request); err != nil {
+		status = "error"
+		_, handled := errorhandler.HandleError[bool](
+			s.logger,
+			err,
+			method,
+			span,
+			zap.Int("user_id", request.UserId),
+			zap.Int("role_id", request.RoleId),
+		)
+		return handled
+	}
+
+	s.mencache.DeleteCachedRole(ctx, request.RoleId)
+	logSuccess("RemoveRoleFromUser process completed",
+		zap.Int("userID", request.UserId),
+		zap.Int("roleID", request.RoleId),
+	)
+
+	return nil
+}

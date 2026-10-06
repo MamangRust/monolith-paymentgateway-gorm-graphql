@@ -16,9 +16,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 
-	card_repo "github.com/MamangRust/monolith-payment-gateway-card/repository"
-	merchant_repo "github.com/MamangRust/monolith-payment-gateway-merchant/repository"
-	saldo_repo "github.com/MamangRust/monolith-payment-gateway-saldo/repository"
 	"gorm.io/gorm"
 )
 
@@ -26,6 +23,7 @@ type TransactionStatsServiceTestSuite struct {
 	suite.Suite
 	gormDB     *gorm.DB
 	ts         *tests.TestSuite
+	deps       *tests.DependencyClients
 	svc        service.Service
 	userID     int32
 	cardNumber string
@@ -42,16 +40,6 @@ func (s *TransactionStatsServiceTestSuite) SetupSuite() {
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
 	s.gormDB = gormDB
-	// Real repository implementations for full integration
-	realSaldo := &realSaldoRepo{repo: saldo_repo.NewRepositories(gormDB)}
-	realCard := &realCardRepo{
-		query:   card_repo.NewCardQueryRepository(gormDB),
-		command: card_repo.NewCardCommandRepository(gormDB),
-	}
-	realMerchant := &realMerchantRepo{repo: merchant_repo.NewMerchantQueryRepository(gormDB)}
-
-	repos := repository.NewRepositories(gormDB, realSaldo, realCard, realMerchant)
-
 	zapLog := zap.NewNop()
 	myLogger := &logger.Logger{Log: zapLog}
 
@@ -59,6 +47,24 @@ func (s *TransactionStatsServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(redisOption)
 	cacheStore := cache.NewCacheStore(redisClient, myLogger, &dummyCacheMetrics{})
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, myLogger)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(
+		gormDB,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		deps.CardQuery,
+		deps.CardCommand,
+		deps.MerchantQuery,
+		repository.GuardOptions{
+			Saldo:    tests.Guard("saldo", myLogger),
+			Card:     tests.Guard("card", myLogger),
+			Merchant: tests.Guard("merchant", myLogger),
+		},
+	)
 
 	s.svc = service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -93,6 +99,9 @@ func (s *TransactionStatsServiceTestSuite) SetupSuite() {
 }
 
 func (s *TransactionStatsServiceTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
 	s.ts.Teardown()
 }
 

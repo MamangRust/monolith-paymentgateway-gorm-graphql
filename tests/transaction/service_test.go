@@ -27,6 +27,7 @@ type TransactionServiceTestSuite struct {
 	suite.Suite
 	gormDB             *gorm.DB
 	ts                 *tests.TestSuite
+	deps               *tests.DependencyClients
 	transactionService service.Service
 	transactionID      int
 	cardNumber         string
@@ -46,16 +47,29 @@ func (s *TransactionServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	cardRepo := &transactionCardRepo{db: gormDB, query: card_repo_impl.NewCardQueryRepository(gormDB), command: card_repo_impl.NewCardCommandRepository(gormDB)}
-	saldoRepo := &realSaldoRepo{repo: saldo_repo_impl.NewRepositories(gormDB)}
-	merchantRepo := &realMerchantRepo{repo: merchant_repo_impl.NewMerchantQueryRepository(gormDB)}
-	repos := repository.NewRepositories(gormDB, saldoRepo, cardRepo, merchantRepo)
-
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
 	log, _ := logger.NewLogger("test", lp)
 	cacheMetrics, _ := observability.NewCacheMetrics("test")
 	cacheStore := cache.NewCacheStore(redisClient, log, cacheMetrics)
+
+	deps, err := tests.NewDependencyClients(gormDB, cacheStore, log)
+	s.Require().NoError(err)
+	s.deps = deps
+
+	repos := repository.NewRepositories(
+		gormDB,
+		deps.SaldoQuery,
+		deps.SaldoCommand,
+		deps.CardQuery,
+		deps.CardCommand,
+		deps.MerchantQuery,
+		repository.GuardOptions{
+			Saldo:    tests.Guard("saldo", log),
+			Card:     tests.Guard("card", log),
+			Merchant: tests.Guard("merchant", log),
+		},
+	)
 
 	s.transactionService = service.NewService(&service.Deps{
 		Kafka:        nil,
@@ -122,6 +136,9 @@ func (s *TransactionServiceTestSuite) SetupSuite() {
 }
 
 func (s *TransactionServiceTestSuite) TearDownSuite() {
+	if s.deps != nil {
+		s.deps.Close()
+	}
 	s.ts.Teardown()
 }
 

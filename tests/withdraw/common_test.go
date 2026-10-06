@@ -3,35 +3,10 @@ package withdraw_test
 import (
 	"context"
 	"time"
-
-	card_repo "github.com/MamangRust/monolith-payment-gateway-card/repository"
-	models "github.com/MamangRust/monolith-payment-gateway-pkg/database/models"
-	saldo_repo "github.com/MamangRust/monolith-payment-gateway-saldo/repository"
-	"github.com/MamangRust/monolith-payment-gateway-shared/domain/requests"
 )
 
-type realCardRepo struct {
-	query card_repo.CardQueryRepository
-}
-
-func (r *realCardRepo) FindUserCardByCardNumber(ctx context.Context, card_number string) (*models.CardByEmailRow, error) {
-	return r.query.FindUserCardByCardNumber(ctx, card_number)
-}
-
-type realSaldoRepo struct {
-	repo saldo_repo.Repositories
-}
-
-func (r *realSaldoRepo) FindByCardNumber(ctx context.Context, card_number string) (*models.Saldo, error) {
-	return r.repo.FindByCardNumber(ctx, card_number)
-}
-func (r *realSaldoRepo) UpdateSaldoBalance(ctx context.Context, request *requests.UpdateSaldoBalance) (*models.UpdateSaldoBalanceRow, error) {
-	return r.repo.UpdateSaldoBalance(ctx, request)
-}
-func (r *realSaldoRepo) UpdateSaldoWithdraw(ctx context.Context, request *requests.UpdateSaldoWithdraw) (*models.UpdateSaldoWithdrawRow, error) {
-	return r.repo.UpdateSaldoWithdraw(ctx, request)
-}
-
+// dummyCacheMetrics is a no-op observability.CacheMetricsInterface used by the
+// stats suites that build a cache store without a metrics backend.
 type dummyCacheMetrics struct{}
 
 func (d *dummyCacheMetrics) RecordCacheHit(ctx context.Context, key string)                  {}

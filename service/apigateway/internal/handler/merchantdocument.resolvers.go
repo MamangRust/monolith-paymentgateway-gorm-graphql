@@ -6,7 +6,7 @@ package graph
 
 import (
 	"context"
-	errors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
+	sharedErrors "github.com/MamangRust/monolith-payment-gateway-shared/errors"
 
 	"github.com/MamangRust/monolith-graphql-apigateway/internal/model"
 	pb "github.com/MamangRust/monolith-payment-gateway-pb/merchant_document"
@@ -25,7 +25,7 @@ func (r *mutationResolver) CreateMerchantDocument(ctx context.Context, input mod
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		req := &pb.CreateMerchantDocumentRequest{
@@ -50,7 +50,7 @@ func (r *mutationResolver) UpdateMerchantDocument(ctx context.Context, input mod
 		docId := int(input.DocumentID)
 
 		if docId == 0 {
-			return nil, errors.NewBadRequestError("invalid request: document ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: document ID cannot be zero")
 		}
 
 		request := &requests.UpdateMerchantDocumentRequest{
@@ -64,7 +64,7 @@ func (r *mutationResolver) UpdateMerchantDocument(ctx context.Context, input mod
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		req := &pb.UpdateMerchantDocumentRequest{
@@ -95,7 +95,7 @@ func (r *mutationResolver) UpdateMerchantDocumentStatus(ctx context.Context, inp
 		docId := int(input.DocumentID)
 
 		if docId == 0 {
-			return nil, errors.NewBadRequestError("invalid request: document ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: document ID cannot be zero")
 		}
 
 		request := &requests.UpdateMerchantDocumentStatusRequest{
@@ -107,7 +107,7 @@ func (r *mutationResolver) UpdateMerchantDocumentStatus(ctx context.Context, inp
 
 		if err := request.Validate(); err != nil {
 			validations := r.parseValidationErrors(err)
-			return nil, errors.NewValidationError(validations)
+			return nil, sharedErrors.NewValidationError(validations)
 		}
 
 		req := &pb.UpdateMerchantDocumentStatusRequest{
@@ -135,7 +135,7 @@ func (r *mutationResolver) TrashedMerchantDocument(ctx context.Context, input mo
 	return ResolverHandle(r.ResolverHandle, "TrashedMerchantDocument", ctx, func(ctx context.Context) (*model.APIResponseMerchantDocumentDeleteAt, error) {
 		docId := int(input.DocumentID)
 		if docId == 0 {
-			return nil, errors.NewBadRequestError("invalid request: document ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: document ID cannot be zero")
 		}
 
 		req := &pb.FindMerchantDocumentByIdRequest{
@@ -160,7 +160,7 @@ func (r *mutationResolver) RestoreMerchantDocument(ctx context.Context, input mo
 	return ResolverHandle(r.ResolverHandle, "RestoreMerchantDocument", ctx, func(ctx context.Context) (*model.APIResponseMerchantDocumentDeleteAt, error) {
 		docId := int(input.DocumentID)
 		if docId == 0 {
-			return nil, errors.NewBadRequestError("invalid request: document ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: document ID cannot be zero")
 		}
 
 		req := &pb.FindMerchantDocumentByIdRequest{
@@ -185,7 +185,7 @@ func (r *mutationResolver) DeleteMerchantDocumentPermanent(ctx context.Context, 
 	return ResolverHandle(r.ResolverHandle, "DeleteMerchantDocumentPermanent", ctx, func(ctx context.Context) (*model.APIResponseMerchantDocumentDelete, error) {
 		docId := int(input.DocumentID)
 		if docId == 0 {
-			return nil, errors.NewBadRequestError("invalid request: document ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: document ID cannot be zero")
 		}
 
 		req := &pb.FindMerchantDocumentByIdRequest{
@@ -398,7 +398,7 @@ func (r *queryResolver) FindMerchantDocumentByID(ctx context.Context, input mode
 	return ResolverHandle(r.ResolverHandle, "FindMerchantDocumentByID", ctx, func(ctx context.Context) (*model.APIResponseMerchantDocument, error) {
 		docId := int(input.DocumentID)
 		if docId == 0 {
-			return nil, errors.NewBadRequestError("invalid request: document ID cannot be zero")
+			return nil, sharedErrors.NewBadRequestError("invalid request: document ID cannot be zero")
 		}
 
 		cachedData, found := r.MerchantDocumentGraphql.Cache.GetCachedMerchantDocumentById(ctx, docId)

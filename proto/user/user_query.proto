@@ -7,6 +7,12 @@ package pb.user;
 import "user/user.proto";
 import "common/api.proto";
 
+message FindAllUserRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string search = 3;
+}
+
 message ApiResponsePaginationUserDeleteAt {
   string status = 1;
   string message = 2;
@@ -22,11 +28,12 @@ message ApiResponsePaginationUser {
 }
 
 service UserQueryService {
-  rpc FindAll(FindAllUserRequest) returns (ApiResponsePaginationUser);
-  rpc FindById(FindByIdUserRequest) returns (ApiResponseUser);
+    rpc FindAll(FindAllUserRequest) returns (ApiResponsePaginationUser);
+    rpc FindById(FindByIdUserRequest) returns (ApiResponseUser);
+    rpc FindByEmail(FindByEmailRequest) returns (ApiResponseUserWithPassword);
+    rpc FindByEmailAndVerify(FindByEmailAndVerifyRequest) returns (ApiResponseUserWithPassword);
+    rpc FindByVerificationCode(FindByVerificationCodeRequest) returns (ApiResponseUser);
 
-  rpc FindByActive(FindAllUserRequest)
-      returns (ApiResponsePaginationUserDeleteAt) {}
-  rpc FindByTrashed(FindAllUserRequest)
-      returns (ApiResponsePaginationUserDeleteAt) {}
+    rpc FindByActive(FindAllUserRequest) returns (ApiResponsePaginationUserDeleteAt);
+    rpc FindByTrashed(FindAllUserRequest) returns (ApiResponsePaginationUserDeleteAt);
 }

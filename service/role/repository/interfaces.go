@@ -24,4 +24,7 @@ type RoleCommandRepository interface {
 	DeleteRolePermanent(ctx context.Context, role_id int) (bool, error)
 	RestoreAllRole(ctx context.Context) (bool, error)
 	DeleteAllRolePermanent(ctx context.Context) (bool, error)
+
+	AssignRoleToUser(ctx context.Context, request *requests.CreateUserRoleRequest) (*models.UserRole, error)
+	RemoveRoleFromUser(ctx context.Context, request *requests.RemoveUserRoleRequest) error
 }

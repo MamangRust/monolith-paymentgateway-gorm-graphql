@@ -18,11 +18,12 @@ import (
 
 type CardRepositoryTestSuite struct {
 	suite.Suite
-	gormDB   *gorm.DB
-	ts       *tests.TestSuite
-	repo     *repository.Repositories
-	userRepo user_repo.Repositories
-	userID   int
+	gormDB     *gorm.DB
+	ts         *tests.TestSuite
+	repo       *repository.Repositories
+	userRepo   *user_repo.Repositories
+	userClient *tests.UserClient
+	userID     int
 }
 
 func (s *CardRepositoryTestSuite) SetupSuite() {
@@ -34,11 +35,15 @@ func (s *CardRepositoryTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.Require().NoError(err)
 
-	s.repo = repository.NewRepositories(gormDB)
-	s.userRepo = user_repo.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	s.repo = repository.NewRepositories(gormDB, userClient.Query, repository.GuardOptions{User: userClient.Guard()})
+	s.userRepo = user_repo.NewRepositories(&user_repo.Deps{Db: gormDB})
 
 	// Create a user for card ownership
-	user, err := s.userRepo.UserCommand().CreateUser(context.Background(), &requests.CreateUserRequest{
+	user, err := s.userRepo.UserCommand.CreateUser(context.Background(), &requests.CreateUserRequest{
 		FirstName: "Card",
 		LastName:  "Owner",
 		Email:     fmt.Sprintf("card.owner-%d-%d@example.com", time.Now().UnixNano(), time.Now().UnixNano()%10000),
@@ -49,6 +54,9 @@ func (s *CardRepositoryTestSuite) SetupSuite() {
 }
 
 func (s *CardRepositoryTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

@@ -23,6 +23,7 @@ type CardStatsServiceTestSuite struct {
 	gormDB      *gorm.DB
 	ts          *tests.TestSuite
 	cardService service.Service
+	userClient  *tests.UserClient
 	cardNumber1 string
 	cardNumber2 string
 	testYear    int
@@ -40,7 +41,11 @@ func (s *CardStatsServiceTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	redisClient := redis.NewClient(opts)
 
-	repos := repository.NewRepositories(gormDB)
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	repos := repository.NewRepositories(gormDB, userClient.Query, repository.GuardOptions{User: userClient.Guard()})
 
 	logger.ResetInstance()
 	lp := sdklog.NewLoggerProvider()
@@ -78,8 +83,9 @@ func (s *CardStatsServiceTestSuite) SetupSuite() {
 
 func (s *CardStatsServiceTestSuite) seedHistoricalData() {
 	// Seed Saldos
+	// A card can only hold one active saldo (idx_saldos_card_number_active), so
+	// one row per card: Jan: 1000 (Card 1), Feb: 3000 (Card 2)
 	s.insertSaldo(s.cardNumber1, 1000, time.Date(s.testYear, 1, 15, 10, 0, 0, 0, time.UTC))
-	s.insertSaldo(s.cardNumber1, 2000, time.Date(s.testYear, 2, 15, 10, 0, 0, 0, time.UTC))
 	s.insertSaldo(s.cardNumber2, 3000, time.Date(s.testYear, 2, 20, 10, 0, 0, 0, time.UTC))
 
 	// Seed Topups
@@ -126,6 +132,9 @@ func (s *CardStatsServiceTestSuite) insertTransfer(from, to string, amount int, 
 }
 
 func (s *CardStatsServiceTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	if s.ts != nil {
 		s.ts.Teardown()
 	}
@@ -141,14 +150,14 @@ func (s *CardStatsServiceTestSuite) TestBalanceService() {
 	s.NoError(err)
 	s.NotEmpty(res)
 	s.Equal(int32(1000), res[0].TotalBalance) // Jan
-	s.Equal(int32(5000), res[1].TotalBalance) // Feb
+	s.Equal(int32(3000), res[1].TotalBalance) // Feb
 
 	// By Card Monthly
 	req1 := &requests.MonthYearCardNumberCard{CardNumber: s.cardNumber1, Year: s.testYear}
 	res1, err := s.cardService.FindMonthlyBalancesByCardNumber(ctx, req1)
 	s.NoError(err)
+	s.Len(res1, 1)
 	s.Equal(int32(1000), res1[0].TotalBalance) // Jan Card 1
-	s.Equal(int32(2000), res1[1].TotalBalance) // Feb Card 1
 
 	// Yearly
 	yRes, err := s.cardService.FindYearlyBalance(ctx, s.testYear)

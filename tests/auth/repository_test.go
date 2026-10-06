@@ -15,11 +15,12 @@ import (
 
 type AuthRepositoryTestSuite struct {
 	suite.Suite
-	gormDB *gorm.DB
-	ts     *tests.TestSuite
-	repo   *repository.Repositories
-	userID int
-	email  string
+	gormDB     *gorm.DB
+	ts         *tests.TestSuite
+	userClient *tests.UserClient
+	repo       *repository.Repositories
+	userID     int
+	email      string
 }
 
 func (s *AuthRepositoryTestSuite) SetupSuite() {
@@ -30,11 +31,23 @@ func (s *AuthRepositoryTestSuite) SetupSuite() {
 	gormDB, err := s.ts.GormDB()
 	s.Require().NoError(err)
 	s.gormDB = gormDB
-	s.repo = repository.NewRepositories(gormDB)
+
+	userClient, err := tests.NewUserClient(gormDB, s.ts)
+	s.Require().NoError(err)
+	s.userClient = userClient
+
+	s.repo = repository.NewRepositories(&repository.Deps{
+		Db:                gormDB,
+		UserQueryClient:   userClient.Query,
+		UserCommandClient: userClient.Command,
+	})
 	s.email = "auth.repo.test@example.com"
 }
 
 func (s *AuthRepositoryTestSuite) TearDownSuite() {
+	if s.userClient != nil {
+		s.userClient.Close()
+	}
 	s.ts.Teardown()
 }
 

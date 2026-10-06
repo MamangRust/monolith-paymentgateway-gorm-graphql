@@ -158,6 +158,50 @@ func (x *ApiResponsePaginationRoleDeleteAt) GetPaginationMeta() *common.Paginati
 	return nil
 }
 
+type FindByNameRoleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FindByNameRoleRequest) Reset() {
+	*x = FindByNameRoleRequest{}
+	mi := &file_role_role_query_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FindByNameRoleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FindByNameRoleRequest) ProtoMessage() {}
+
+func (x *FindByNameRoleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_role_role_query_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FindByNameRoleRequest.ProtoReflect.Descriptor instead.
+func (*FindByNameRoleRequest) Descriptor() ([]byte, []int) {
+	return file_role_role_query_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *FindByNameRoleRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 var File_role_role_query_proto protoreflect.FileDescriptor
 
 const file_role_role_query_proto_rawDesc = "" +
@@ -172,13 +216,17 @@ const file_role_role_query_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x121\n" +
 	"\x04data\x18\x03 \x03(\v2\x1d.pb.role.RoleResponseDeleteAtR\x04data\x12A\n" +
-	"\x0epaginationMeta\x18\x04 \x01(\v2\x19.pb.common.PaginationMetaR\x0epaginationMeta2\xaf\x03\n" +
+	"\x0epaginationMeta\x18\x04 \x01(\v2\x19.pb.common.PaginationMetaR\x0epaginationMeta\"+\n" +
+	"\x15FindByNameRoleRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name2\xf9\x03\n" +
 	"\vRoleService\x12P\n" +
 	"\vFindAllRole\x12\x1b.pb.role.FindAllRoleRequest\x1a\".pb.role.ApiResponsePaginationRole\"\x00\x12H\n" +
 	"\fFindByIdRole\x12\x1c.pb.role.FindByIdRoleRequest\x1a\x18.pb.role.ApiResponseRole\"\x00\x12Y\n" +
 	"\fFindByActive\x12\x1b.pb.role.FindAllRoleRequest\x1a*.pb.role.ApiResponsePaginationRoleDeleteAt\"\x00\x12Z\n" +
 	"\rFindByTrashed\x12\x1b.pb.role.FindAllRoleRequest\x1a*.pb.role.ApiResponsePaginationRoleDeleteAt\"\x00\x12M\n" +
-	"\fFindByUserId\x12 .pb.role.FindByIdUserRoleRequest\x1a\x19.pb.role.ApiResponsesRole\"\x00B8Z6github.com/MamangRust/monolith-payment-gateway-pb/roleb\x06proto3"
+	"\fFindByUserId\x12 .pb.role.FindByIdUserRoleRequest\x1a\x19.pb.role.ApiResponsesRole\"\x00\x12H\n" +
+	"\n" +
+	"FindByName\x12\x1e.pb.role.FindByNameRoleRequest\x1a\x18.pb.role.ApiResponseRole\"\x00B8Z6github.com/MamangRust/monolith-payment-gateway-pb/roleb\x06proto3"
 
 var (
 	file_role_role_query_proto_rawDescOnce sync.Once
@@ -192,39 +240,42 @@ func file_role_role_query_proto_rawDescGZIP() []byte {
 	return file_role_role_query_proto_rawDescData
 }
 
-var file_role_role_query_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_role_role_query_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_role_role_query_proto_goTypes = []any{
 	(*ApiResponsePaginationRole)(nil),         // 0: pb.role.ApiResponsePaginationRole
 	(*ApiResponsePaginationRoleDeleteAt)(nil), // 1: pb.role.ApiResponsePaginationRoleDeleteAt
-	(*RoleResponse)(nil),                      // 2: pb.role.RoleResponse
-	(*common.PaginationMeta)(nil),             // 3: pb.common.PaginationMeta
-	(*RoleResponseDeleteAt)(nil),              // 4: pb.role.RoleResponseDeleteAt
-	(*FindAllRoleRequest)(nil),                // 5: pb.role.FindAllRoleRequest
-	(*FindByIdRoleRequest)(nil),               // 6: pb.role.FindByIdRoleRequest
-	(*FindByIdUserRoleRequest)(nil),           // 7: pb.role.FindByIdUserRoleRequest
-	(*ApiResponseRole)(nil),                   // 8: pb.role.ApiResponseRole
-	(*ApiResponsesRole)(nil),                  // 9: pb.role.ApiResponsesRole
+	(*FindByNameRoleRequest)(nil),             // 2: pb.role.FindByNameRoleRequest
+	(*RoleResponse)(nil),                      // 3: pb.role.RoleResponse
+	(*common.PaginationMeta)(nil),             // 4: pb.common.PaginationMeta
+	(*RoleResponseDeleteAt)(nil),              // 5: pb.role.RoleResponseDeleteAt
+	(*FindAllRoleRequest)(nil),                // 6: pb.role.FindAllRoleRequest
+	(*FindByIdRoleRequest)(nil),               // 7: pb.role.FindByIdRoleRequest
+	(*FindByIdUserRoleRequest)(nil),           // 8: pb.role.FindByIdUserRoleRequest
+	(*ApiResponseRole)(nil),                   // 9: pb.role.ApiResponseRole
+	(*ApiResponsesRole)(nil),                  // 10: pb.role.ApiResponsesRole
 }
 var file_role_role_query_proto_depIdxs = []int32{
-	2, // 0: pb.role.ApiResponsePaginationRole.data:type_name -> pb.role.RoleResponse
-	3, // 1: pb.role.ApiResponsePaginationRole.paginationMeta:type_name -> pb.common.PaginationMeta
-	4, // 2: pb.role.ApiResponsePaginationRoleDeleteAt.data:type_name -> pb.role.RoleResponseDeleteAt
-	3, // 3: pb.role.ApiResponsePaginationRoleDeleteAt.paginationMeta:type_name -> pb.common.PaginationMeta
-	5, // 4: pb.role.RoleService.FindAllRole:input_type -> pb.role.FindAllRoleRequest
-	6, // 5: pb.role.RoleService.FindByIdRole:input_type -> pb.role.FindByIdRoleRequest
-	5, // 6: pb.role.RoleService.FindByActive:input_type -> pb.role.FindAllRoleRequest
-	5, // 7: pb.role.RoleService.FindByTrashed:input_type -> pb.role.FindAllRoleRequest
-	7, // 8: pb.role.RoleService.FindByUserId:input_type -> pb.role.FindByIdUserRoleRequest
-	0, // 9: pb.role.RoleService.FindAllRole:output_type -> pb.role.ApiResponsePaginationRole
-	8, // 10: pb.role.RoleService.FindByIdRole:output_type -> pb.role.ApiResponseRole
-	1, // 11: pb.role.RoleService.FindByActive:output_type -> pb.role.ApiResponsePaginationRoleDeleteAt
-	1, // 12: pb.role.RoleService.FindByTrashed:output_type -> pb.role.ApiResponsePaginationRoleDeleteAt
-	9, // 13: pb.role.RoleService.FindByUserId:output_type -> pb.role.ApiResponsesRole
-	9, // [9:14] is the sub-list for method output_type
-	4, // [4:9] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3,  // 0: pb.role.ApiResponsePaginationRole.data:type_name -> pb.role.RoleResponse
+	4,  // 1: pb.role.ApiResponsePaginationRole.paginationMeta:type_name -> pb.common.PaginationMeta
+	5,  // 2: pb.role.ApiResponsePaginationRoleDeleteAt.data:type_name -> pb.role.RoleResponseDeleteAt
+	4,  // 3: pb.role.ApiResponsePaginationRoleDeleteAt.paginationMeta:type_name -> pb.common.PaginationMeta
+	6,  // 4: pb.role.RoleService.FindAllRole:input_type -> pb.role.FindAllRoleRequest
+	7,  // 5: pb.role.RoleService.FindByIdRole:input_type -> pb.role.FindByIdRoleRequest
+	6,  // 6: pb.role.RoleService.FindByActive:input_type -> pb.role.FindAllRoleRequest
+	6,  // 7: pb.role.RoleService.FindByTrashed:input_type -> pb.role.FindAllRoleRequest
+	8,  // 8: pb.role.RoleService.FindByUserId:input_type -> pb.role.FindByIdUserRoleRequest
+	2,  // 9: pb.role.RoleService.FindByName:input_type -> pb.role.FindByNameRoleRequest
+	0,  // 10: pb.role.RoleService.FindAllRole:output_type -> pb.role.ApiResponsePaginationRole
+	9,  // 11: pb.role.RoleService.FindByIdRole:output_type -> pb.role.ApiResponseRole
+	1,  // 12: pb.role.RoleService.FindByActive:output_type -> pb.role.ApiResponsePaginationRoleDeleteAt
+	1,  // 13: pb.role.RoleService.FindByTrashed:output_type -> pb.role.ApiResponsePaginationRoleDeleteAt
+	10, // 14: pb.role.RoleService.FindByUserId:output_type -> pb.role.ApiResponsesRole
+	9,  // 15: pb.role.RoleService.FindByName:output_type -> pb.role.ApiResponseRole
+	10, // [10:16] is the sub-list for method output_type
+	4,  // [4:10] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_role_role_query_proto_init() }
@@ -239,7 +290,7 @@ func file_role_role_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_role_role_query_proto_rawDesc), len(file_role_role_query_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

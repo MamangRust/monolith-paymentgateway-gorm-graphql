@@ -19,7 +19,7 @@ type UserRepositoryTestSuite struct {
 	suite.Suite
 	gormDB *gorm.DB
 	ts     *tests.TestSuite
-	repo   repository.Repositories
+	repo   *repository.Repositories
 }
 
 func (s *UserRepositoryTestSuite) SetupSuite() {
@@ -31,7 +31,7 @@ func (s *UserRepositoryTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.Require().NoError(err)
 
-	s.repo = repository.NewRepositories(gormDB)
+	s.repo = repository.NewRepositories(&repository.Deps{Db: gormDB})
 }
 
 func (s *UserRepositoryTestSuite) TearDownSuite() {
@@ -39,7 +39,7 @@ func (s *UserRepositoryTestSuite) TearDownSuite() {
 }
 
 func (s *UserRepositoryTestSuite) createSeedUser() (*models.CreateUserRow, error) {
-	return s.repo.UserCommand().CreateUser(context.Background(), &requests.CreateUserRequest{
+	return s.repo.UserCommand.CreateUser(context.Background(), &requests.CreateUserRequest{
 		FirstName:       "User",
 		LastName:        "Tester",
 		Email:           fmt.Sprintf("user.tester-%d@example.com", time.Now().UnixNano()),
@@ -58,7 +58,7 @@ func (s *UserRepositoryTestSuite) TestCreateUser() {
 		ConfirmPassword: "password123",
 	}
 
-	res, err := s.repo.UserCommand().CreateUser(ctx, req)
+	res, err := s.repo.UserCommand.CreateUser(ctx, req)
 	s.NoError(err)
 	s.NotNil(res)
 }
@@ -68,7 +68,7 @@ func (s *UserRepositoryTestSuite) TestFindAllUsers() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	res, err := s.repo.UserQuery().FindAllUsers(ctx, &requests.FindAllUsers{
+	res, err := s.repo.UserQuery.FindAllUsers(ctx, &requests.FindAllUsers{
 		Page:     1,
 		PageSize: 10,
 		Search:   "",
@@ -82,7 +82,7 @@ func (s *UserRepositoryTestSuite) TestFindById() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	found, err := s.repo.UserQuery().FindById(ctx, int(user.UserID))
+	found, err := s.repo.UserQuery.FindById(ctx, int(user.UserID))
 	s.NoError(err)
 	s.NotNil(found)
 	s.Equal(user.UserID, found.UserID)
@@ -93,7 +93,7 @@ func (s *UserRepositoryTestSuite) TestFindByActive() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	res, err := s.repo.UserQuery().FindByActive(ctx, &requests.FindAllUsers{
+	res, err := s.repo.UserQuery.FindByActive(ctx, &requests.FindAllUsers{
 		Page:     1,
 		PageSize: 10,
 		Search:   "",
@@ -107,10 +107,10 @@ func (s *UserRepositoryTestSuite) TestFindByTrashed() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	_, err = s.repo.UserCommand().TrashedUser(ctx, int(user.UserID))
+	_, err = s.repo.UserCommand.TrashedUser(ctx, int(user.UserID))
 	s.Require().NoError(err)
 
-	res, err := s.repo.UserQuery().FindByTrashed(ctx, &requests.FindAllUsers{
+	res, err := s.repo.UserQuery.FindByTrashed(ctx, &requests.FindAllUsers{
 		Page:     1,
 		PageSize: 10,
 		Search:   "",
@@ -134,7 +134,7 @@ func (s *UserRepositoryTestSuite) TestUpdateUser() {
 		ConfirmPassword: "newpassword123",
 	}
 
-	res, err := s.repo.UserCommand().UpdateUser(ctx, req)
+	res, err := s.repo.UserCommand.UpdateUser(ctx, req)
 	s.NoError(err)
 	s.NotNil(res)
 }
@@ -144,7 +144,7 @@ func (s *UserRepositoryTestSuite) TestTrashUser() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	trashed, err := s.repo.UserCommand().TrashedUser(ctx, int(user.UserID))
+	trashed, err := s.repo.UserCommand.TrashedUser(ctx, int(user.UserID))
 	s.NoError(err)
 	s.NotNil(trashed)
 }
@@ -154,10 +154,10 @@ func (s *UserRepositoryTestSuite) TestRestoreUser() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	_, err = s.repo.UserCommand().TrashedUser(ctx, int(user.UserID))
+	_, err = s.repo.UserCommand.TrashedUser(ctx, int(user.UserID))
 	s.Require().NoError(err)
 
-	restored, err := s.repo.UserCommand().RestoreUser(ctx, int(user.UserID))
+	restored, err := s.repo.UserCommand.RestoreUser(ctx, int(user.UserID))
 	s.NoError(err)
 	s.NotNil(restored)
 }
@@ -167,10 +167,10 @@ func (s *UserRepositoryTestSuite) TestDeleteUserPermanent() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	_, err = s.repo.UserCommand().TrashedUser(ctx, int(user.UserID))
+	_, err = s.repo.UserCommand.TrashedUser(ctx, int(user.UserID))
 	s.Require().NoError(err)
 
-	success, err := s.repo.UserCommand().DeleteUserPermanent(ctx, int(user.UserID))
+	success, err := s.repo.UserCommand.DeleteUserPermanent(ctx, int(user.UserID))
 	s.NoError(err)
 	s.True(success)
 }
@@ -180,10 +180,10 @@ func (s *UserRepositoryTestSuite) TestRestoreAllUser() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	_, err = s.repo.UserCommand().TrashedUser(ctx, int(user.UserID))
+	_, err = s.repo.UserCommand.TrashedUser(ctx, int(user.UserID))
 	s.Require().NoError(err)
 
-	success, err := s.repo.UserCommand().RestoreAllUser(ctx)
+	success, err := s.repo.UserCommand.RestoreAllUser(ctx)
 	s.NoError(err)
 	s.True(success)
 }
@@ -193,7 +193,7 @@ func (s *UserRepositoryTestSuite) TestDeleteAllUserPermanent() {
 	s.Require().NoError(err)
 	ctx := context.Background()
 
-	success, err := s.repo.UserCommand().DeleteAllUserPermanent(ctx)
+	success, err := s.repo.UserCommand.DeleteAllUserPermanent(ctx)
 	s.NoError(err)
 	s.True(success)
 }
